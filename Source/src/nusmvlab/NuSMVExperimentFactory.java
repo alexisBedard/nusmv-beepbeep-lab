@@ -60,8 +60,9 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 			return null;
 		}
 		Processor start = createProcessorChain(query);
-		if (start == null)
+		if (start == null && query.compareTo(Q_DUMMY) != 0)
 		{
+			// We are not asking for the dummy query and we got no processor
 			return null;
 		}
 		int queue_size = region.getInt(QUEUE_SIZE);

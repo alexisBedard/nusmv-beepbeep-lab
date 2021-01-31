@@ -54,13 +54,13 @@ public class MainLab extends Laboratory
 		r.add(QUERY, Q_DUMMY, Q_PASSTHROUGH);
 		
 		// Running time by queue size
-		for (Region t_r : r.all(QUERY, DOMAIN_SIZE))
+		for (Region t_r : r.all(DOMAIN_SIZE))
 		{
 			ExperimentTable et = new ExperimentTable(QUERY, QUEUE_SIZE, TIME);
-			et.setTitle("Running time by queue size");
+			et.setTitle("Running time by queue size (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
 			et.setShowInList(false);
 			add(et);
-			for (Region t_q : t_r.all(QUEUE_SIZE))
+			for (Region t_q : t_r.all(QUERY, QUEUE_SIZE))
 			{
 				NuSMVExperiment e = factory.get(t_q);
 				if (e == null)
@@ -74,6 +74,7 @@ public class MainLab extends Laboratory
 			tt.setNickname("tTimeQueue");
 			add(tt);
 			Scatterplot plot = new Scatterplot(tt);
+			plot.setTitle(tt.getTitle());
 			plot.setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Time (ms)");
 			plot.setNickname("p" + tt.getNickname());
 			add(plot);

@@ -94,15 +94,45 @@ public class NuSMVExperiment extends Experiment
 	
 	protected void runNuSMV(String model) throws ExperimentException
 	{
-		CommandRunner runner = new CommandRunner(new String[] {"-source", getSourceFilename(), NUSMV_PATH}, model);
+		CommandRunner runner = getRunner(false, model);
 		runner.run();
-		String output = new String(runner.getBytes());
+		byte[] bytes = runner.getBytes();
+		if (bytes == null)
+		{
+			throw new ExperimentException("The call to NuSMV returned null");
+		}
+		String output = new String(bytes);
 		int outcode = runner.getErrorCode();
 		if (outcode != 0)
 		{
 			throw new ExperimentException("NuSMV existed with code " + outcode);
 		}
 		// TODO: parse NuSMV output and write stats into experiment
+	}
+	
+	/**
+	 * Gets an instance of {@link CommandRunner} that calls NuSMV on the
+	 * input model.
+	 * @param use_stdin Set to <tt>true</tt> to pass the model to NuSMV
+	 * through the standard input. Set to <tt>false</tt> to write the model
+	 * to a temporary file instead. Currently, NuSMV seems to be unable to
+	 * read a model from stdin despite what its documentation says, so it is
+	 * advisable to call this method using <tt>false</tt>.
+	 * @param model The model to send to NuSMV
+	 * @return An instance of the command runner, ready to be executed
+	 */
+	protected CommandRunner getRunner(boolean use_stdin, String model)
+	{
+		if (use_stdin)
+		{
+			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename()}, model);
+		}
+		else
+		{
+			String model_filename = TMP_DIR + FILE_SEPARATOR + "model.smv";
+			FileHelper.writeFromString(new File(model_filename), model);
+			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename(), model_filename});
+		}
 	}
 	
 	@Override

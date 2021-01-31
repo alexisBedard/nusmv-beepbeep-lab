@@ -55,7 +55,15 @@ public class DummyModelProvider implements NuSMVModelProvider
 	@Override
 	public void getModel(PrintStream ps)
 	{
-		// TODO Auto-generated method stub
+		ps.println("MODULE main");
+		ps.println("VAR");
+		ps.println("  x : 0.." + m_domainSize + ";");
+		ps.println("INIT");
+		ps.println("  x = 0;");
+		ps.println("TRANS");
+		ps.println("  next(x) = x + 1;");
+		ps.println("CTLSPEC");
+		ps.println("  AG (x = 0 -> AF (x = 0));");
 	}
 
 	@Override
