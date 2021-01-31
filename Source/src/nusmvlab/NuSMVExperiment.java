@@ -31,7 +31,7 @@ import ca.uqac.lif.labpal.FileHelper;
  * Experiment that runs NuSMV on a given input model, evaluates a CTL or LTL
  * property, and gathers statistics about the process.
  */
-public abstract class NuSMVExperiment extends Experiment
+public class NuSMVExperiment extends Experiment
 {
 	/**
 	 * The name of attribute "Time".
