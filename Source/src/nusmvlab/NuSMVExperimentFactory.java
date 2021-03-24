@@ -17,14 +17,8 @@
  */
 package nusmvlab;
 
-import ca.uqac.lif.cep.Processor;
-import ca.uqac.lif.cep.tmf.Passthrough;
 import ca.uqac.lif.labpal.ExperimentFactory;
 import ca.uqac.lif.labpal.Region;
-
-import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
-import static nusmvlab.BeepBeepModelProvider.QUERY;
-import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
 
 /**
  * Creates instances of {@link NuSMVExperiment} based on parameters found in
@@ -33,65 +27,38 @@ import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
 public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExperiment>
 {
 	/**
-	 * The name of query "Dummy"
+	 * A library to provide NUSMV models.
 	 */
-	public static final transient String Q_DUMMY = "Dummy";
+	protected transient Library<ModelProvider> m_modelLibrary;
 	
 	/**
-	 * The name of query "Passthrough"
+	 * A library to provide properties to verify on models.
 	 */
-	public static final transient String Q_PASSTHROUGH = "Passthrough";
+	protected transient Library<PropertyProvider> m_propertyLibrary;
 	
 	/**
 	 * Creates a new instance of the factory
 	 * @param lab The lab the experiments will be added to
+	 * @param models A library that provides models based on a region
+	 * @param props A library that provides properties based on a region
 	 */
-	public NuSMVExperimentFactory(MainLab lab)
+	public NuSMVExperimentFactory(MainLab lab, Library<ModelProvider> models, Library<PropertyProvider> props)
 	{
 		super(lab, NuSMVExperiment.class);
+		m_modelLibrary = models;
+		m_propertyLibrary = props;
 	}
 
 	@Override
 	protected NuSMVExperiment createExperiment(Region region)
 	{
-		String query = region.getString(QUERY);
-		if (query == null)
+		ModelProvider model = m_modelLibrary.get(region);
+		PropertyProvider prop = m_propertyLibrary.get(region);
+		if (model == null || prop == null)
 		{
 			return null;
 		}
-		Processor start = createProcessorChain(query);
-		if (start == null && query.compareTo(Q_DUMMY) != 0)
-		{
-			// We are not asking for the dummy query and we got no processor
-			return null;
-		}
-		int queue_size = region.getInt(QUEUE_SIZE);
-		int domain_size = region.getInt(DOMAIN_SIZE);
-		NuSMVModelProvider bmp = null;
-		if (query.compareTo(Q_DUMMY) == 0)
-		{
-			// Special case for testing purposes
-			bmp = new DummyModelProvider(queue_size, domain_size);
-		}
-		else
-		{
-			bmp = new BeepBeepModelProvider(start, query, queue_size, domain_size);
-		}
-		NuSMVExperiment e = new NuSMVExperiment(bmp);
+		NuSMVExperiment e = new NuSMVExperiment(model, prop);
 		return e;
-	}
-	
-	/**
-	 * Creates a chain of BeepBeep processors, based on a textual name.
-	 * @param query The name of the chain to create
-	 * @return A reference to the first processor of the chain
-	 */
-	protected static Processor createProcessorChain(String query)
-	{
-		if (query.compareTo(Q_PASSTHROUGH) == 0)
-		{
-			return new Passthrough();
-		}
-		return null;
 	}
 }

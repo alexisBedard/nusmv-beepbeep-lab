@@ -26,6 +26,7 @@ import ca.uqac.lif.labpal.CommandRunner;
 import ca.uqac.lif.labpal.Experiment;
 import ca.uqac.lif.labpal.ExperimentException;
 import ca.uqac.lif.labpal.FileHelper;
+import nusmvlab.PropertyProvider.Logic;
 
 /**
  * Experiment that runs NuSMV on a given input model, evaluates a CTL or LTL
@@ -54,20 +55,27 @@ public class NuSMVExperiment extends Experiment
 	protected static final transient String FILE_SEPARATOR = System.getProperty("file.separator");
 	
 	/**
-	 * An object that provides a NuSMV file to the experiment.
+	 * An object that provides a NuSMV model to the experiment.
 	 */
-	protected transient NuSMVModelProvider m_modelProvider;
+	protected transient ModelProvider m_modelProvider;
+	
+	/**
+	 * An object that provides a CTL/LTL property to the experiment.
+	 */
+	protected transient PropertyProvider m_propertyProvider;
 	
 	/**
 	 * Creates a new instance of NuSMVExperiment.
-	 * @param p  An object that provides a NuSMV file to the experiment
+	 * @param model  An object that provides a NuSMV file to the experiment
 	 */
-	public NuSMVExperiment(/*@ non_null @*/ NuSMVModelProvider p)
+	public NuSMVExperiment(/*@ non_null @*/ ModelProvider model, PropertyProvider property)
 	{
 		super();
-		m_modelProvider = p;
 		describe(TIME, "The time (in ms) taken to process the NuSMV model");
+		m_modelProvider = model;
+		m_propertyProvider = property;
 		m_modelProvider.fillExperiment(this);
+		m_propertyProvider.fillExperiment(this);
 	}
 	
 	@Override
@@ -83,7 +91,16 @@ public class NuSMVExperiment extends Experiment
 		{
 			throw new ExperimentException(e);
 		}
-		m_modelProvider.getModel(ps);
+		m_modelProvider.printToFile(ps);
+		if (m_propertyProvider.getLogic() == Logic.CTL)
+		{
+			ps.println("CTLSPEC");
+		}
+		else
+		{
+			ps.println("LTLSPEC");
+		}
+		m_propertyProvider.printToFile(ps);
 		ps.close();
 		String model = baos.toString();
 		long start_time = System.currentTimeMillis();

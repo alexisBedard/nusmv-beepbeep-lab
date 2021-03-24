@@ -17,39 +17,36 @@
  */
 package nusmvlab;
 
-import java.io.PrintStream;
-
 /**
- * Generates a "dummy" NuSMV model that does not correspond to any particular
- * problem. This class is only used to test the implementation of the lab and
- * should not be used in the final experiments.
+ * Provider that returns an LTL formula or a list of LTL formulas.
  */
-public class DummyModelProvider extends ModelProvider
+public abstract class LTLPropertyProvider implements PropertyProvider
 {
 	/**
-	 * The name of this model provider
+	 * The name given to the property
 	 */
-	public static final transient String NAME = "Dummy";
+	protected transient String m_name;
 	
 	/**
-	 * Creates a new dummy model provider.
-	 * @param queue_size
-	 * @param domain_size
+	 * Creates a new LTL property provider.
+	 * @param name The name given to the property
 	 */
-	public DummyModelProvider(int queue_size, int domain_size)
+	public LTLPropertyProvider(String name)
 	{
-		super(NAME, queue_size, domain_size);
+		super();
+		m_name = name;
 	}
 
 	@Override
-	public void printToFile(PrintStream ps)
+	public void fillExperiment(NuSMVExperiment e) 
 	{
-		ps.println("MODULE main");
-		ps.println("VAR");
-		ps.println("  x : 0.." + m_domainSize + ";");
-		ps.println("INIT");
-		ps.println("  x = 0;");
-		ps.println("TRANS");
-		ps.println("  next(x) = x + 1;");
+		e.describe(PROPERTY, "The LTL property that is verified on the model");
+		e.setInput(PROPERTY, m_name);
+	}
+
+	@Override
+	public final Logic getLogic() 
+	{
+		return Logic.LTL;
 	}
 }

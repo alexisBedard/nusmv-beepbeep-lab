@@ -17,24 +17,9 @@
  */
 package nusmvlab;
 
-import java.io.PrintStream;
+import ca.uqac.lif.labpal.Region;
 
-/**
- * Interface for any object that can write a NuSMV file to a
- * {@link PrintStream}. The provider can also populate an experiment with
- * parameters pertaining to the model it provides.
- */
-public interface NuSMVModelProvider
+public interface Library<T> 
 {
-	/**
-	 * Writes a NuSMV file to a PrintStream.
-	 * @param ps The stream to write to
-	 */
-	public void getModel(/*@ non_null @*/ PrintStream ps);
-	
-	/**
-	 * Writes parameters pertaining to the model into an experiment.
-	 * @param e The experiment to write to
-	 */
-	public void fillExperiment(/*@ non_null @*/ NuSMVExperiment e);
+	public T get(Region r);
 }

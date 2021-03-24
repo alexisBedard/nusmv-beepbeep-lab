@@ -25,12 +25,14 @@ import ca.uqac.lif.mtnp.plot.gnuplot.Scatterplot;
 import ca.uqac.lif.mtnp.table.ExpandAsColumns;
 import ca.uqac.lif.mtnp.table.TransformedTable;
 
-import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
-import static nusmvlab.BeepBeepModelProvider.QUERY;
-import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
+import static nusmvlab.ModelProvider.DOMAIN_SIZE;
+import static nusmvlab.ModelProvider.QUERY;
+import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.NuSMVExperiment.TIME;
-import static nusmvlab.NuSMVExperimentFactory.Q_DUMMY;
-import static nusmvlab.NuSMVExperimentFactory.Q_PASSTHROUGH;
+import static nusmvlab.NuSMVModelLibrary.Q_DUMMY;
+import static nusmvlab.NuSMVModelLibrary.Q_PASSTHROUGH;
+import static nusmvlab.PropertyProvider.PROPERTY;
+import static nusmvlab.StreamPropertyLibrary.P_X_STAYS_NULL;
 
 /**
  * The lab that evaluates NuSMV translations of BeepBeep processor chains.
@@ -43,16 +45,19 @@ public class MainLab extends Laboratory
 		// Lab metadata
 		setTitle("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
-		
+
 		// Experiment factory
-		NuSMVExperimentFactory factory = new NuSMVExperimentFactory(this);
-		
+		NuSMVModelLibrary model_library = new NuSMVModelLibrary();
+		StreamPropertyLibrary prop_library = new StreamPropertyLibrary();
+		NuSMVExperimentFactory factory = new NuSMVExperimentFactory(this, model_library, prop_library);
+
 		// Big region
 		Region r = new Region();
 		r.addRange(DOMAIN_SIZE, 1, 3);
 		r.addRange(QUEUE_SIZE, 1, 3);
 		r.add(QUERY, Q_DUMMY, Q_PASSTHROUGH);
-		
+		r.add(PROPERTY, P_X_STAYS_NULL);
+
 		// Running time by queue size
 		for (Region t_r : r.all(DOMAIN_SIZE))
 		{
@@ -60,7 +65,7 @@ public class MainLab extends Laboratory
 			et.setTitle("Running time by queue size (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
 			et.setShowInList(false);
 			add(et);
-			for (Region t_q : t_r.all(QUERY, QUEUE_SIZE))
+			for (Region t_q : t_r.all(QUERY, PROPERTY, QUEUE_SIZE))
 			{
 				NuSMVExperiment e = factory.get(t_q);
 				if (e == null)
@@ -69,7 +74,7 @@ public class MainLab extends Laboratory
 				}
 				et.add(e);
 			}
-			TransformedTable tt = new TransformedTable(new ExpandAsColumns(QUEUE_SIZE, TIME), et);
+			TransformedTable tt = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et);
 			tt.setTitle(et.getTitle());
 			tt.setNickname("tTimeQueue");
 			add(tt);
@@ -79,8 +84,35 @@ public class MainLab extends Laboratory
 			plot.setNickname("p" + tt.getNickname());
 			add(plot);
 		}
+
+		// Running time by domain size
+		for (Region t_r : r.all(QUEUE_SIZE))
+		{
+			ExperimentTable et = new ExperimentTable(QUERY, DOMAIN_SIZE, TIME);
+			et.setTitle("Running time by domain size (queue = " + t_r.getInt(QUEUE_SIZE) + ")");
+			et.setShowInList(false);
+			add(et);
+			for (Region t_q : t_r.all(QUERY, PROPERTY, DOMAIN_SIZE))
+			{
+				NuSMVExperiment e = factory.get(t_q);
+				if (e == null)
+				{
+					continue;
+				}
+				et.add(e);
+			}
+			TransformedTable tt = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et);
+			tt.setTitle(et.getTitle());
+			tt.setNickname("tTimeDomain");
+			add(tt);
+			Scatterplot plot = new Scatterplot(tt);
+			plot.setTitle(tt.getTitle());
+			plot.setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Time (ms)");
+			plot.setNickname("p" + tt.getNickname());
+			add(plot);
+		}
 	}
-	
+
 	public static void main(String[] args)
 	{
 		// Nothing else to do here

@@ -24,66 +24,30 @@ import ca.uqac.lif.cep.Processor;
 /**
  * Provides a NuSMV model based on a chain of BeepBeep processors.
  */
-public class BeepBeepModelProvider implements NuSMVModelProvider
-{
-	/**
-	 * The name of parameter "Query"
-	 */
-	public static final transient String QUERY = "Query";
-	
-	/**
-	 * The name of parameter "Queue size"
-	 */
-	public static final transient String QUEUE_SIZE = "Queue size";
-	
-	/**
-	 * The name of parameter "Domain size"
-	 */
-	public static final transient String DOMAIN_SIZE = "Domain size";
-	
-	/**
-	 * The size of the queues in the SMV model to generate
-	 */
-	protected int m_queueSize = 0;
-	
-	/**
-	 * The cardinality of the domains in the SMV model to generate
-	 */
-	protected int m_domainSize = 0;
-	
-	/**
-	 * The name of the processor chain
-	 */
-	protected String m_name;
-	
+public class BeepBeepModelProvider extends ModelProvider
+{	
 	/**
 	 * The processor at the start of the chain
 	 */
 	protected Processor m_start;
 	
+	/**
+	 * Creates a new instance of model provider.
+	 * @param start The processor instance at the start of the chain
+	 * @param name A (textual) name given to the model in question 
+	 * @param queue_size The size of the queues in the SMV model to generate
+	 * @param domain_size The size of the domains in the SMV model to generate
+	 */
 	public BeepBeepModelProvider(Processor start, String name, int queue_size, int domain_size)
 	{
-		super();
+		super(name, queue_size, domain_size);
 		m_start = start;
-		m_name = name;
-		m_queueSize = queue_size;
-		m_domainSize = domain_size;
 	}
 	
 	@Override
-	public void getModel(PrintStream ps)
+	public void printToFile(PrintStream ps)
 	{
 		// TODO: produce SMV model from start processor and given params
 	}
 
-	@Override
-	public void fillExperiment(NuSMVExperiment e)
-	{
-		e.describe(QUERY, "The chain of processors under study");
-		e.setInput(QUERY, m_name);
-		e.describe(QUEUE_SIZE, "The size of the queues in the generated SMV model");
-		e.setInput(QUEUE_SIZE, m_queueSize);
-		e.describe(DOMAIN_SIZE, "The cardinality of the domains in the generated SMV model");
-		e.setInput(DOMAIN_SIZE, m_domainSize);
-	}
 }
