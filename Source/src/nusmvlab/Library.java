@@ -19,7 +19,17 @@ package nusmvlab;
 
 import ca.uqac.lif.labpal.Region;
 
+/**
+ * Returns objects based on the contents of a region.
+ *
+ * @param <T> The type of the objects returned
+ */
 public interface Library<T> 
 {
-	public T get(Region r);
+	/**
+	 * Gets an object.
+	 * @param r The region, whose parameters determine the object returned
+	 * @return An object instance or <tt>null</tt>
+	 */
+	/*@ null @*/ public T get(/*@ non_null @*/ Region r);
 }

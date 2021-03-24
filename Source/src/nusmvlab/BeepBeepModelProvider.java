@@ -25,7 +25,12 @@ import ca.uqac.lif.cep.Processor;
  * Provides a NuSMV model based on a chain of BeepBeep processors.
  */
 public class BeepBeepModelProvider extends ModelProvider
-{	
+{
+	/**
+	 * Name of parameter "Number of processors"
+	 */
+	public static final transient String NUM_PROCESSORS = "Number of processors";
+	
 	/**
 	 * The processor at the start of the chain
 	 */

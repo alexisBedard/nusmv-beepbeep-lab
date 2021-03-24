@@ -64,7 +64,7 @@ public abstract class ModelProvider implements NuSMVProvider
 	}
 	
 	@Override
-	public void fillExperiment(NuSMVExperiment e)
+	public void fillExperiment(/*@ non_null @*/ NuSMVExperiment e)
 	{
 		e.describe(QUERY, "The chain of processors under study");
 		e.setInput(QUERY, m_name);
