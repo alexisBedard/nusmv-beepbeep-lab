@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ca.uqac.lif.labpal.CommandRunner;
 import ca.uqac.lif.labpal.Experiment;
@@ -40,6 +42,21 @@ public class NuSMVExperiment extends Experiment
 	public static final transient String TIME = "Time";
 	
 	/**
+	 * The name of attribute "Memory".
+	 */
+	public static final transient String MEMORY = "Memory";
+	
+	/**
+	 * The name of attribute "Total BDD nodes".
+	 */
+	public static final transient String TOTAL_NODES = "Total BDD nodes";
+	
+	/**
+	 * The name of attribute "Live BDD nodes".
+	 */
+	public static final transient String LIVE_NODES = "Live BDD nodes";
+	
+	/**
 	 * The command to call to run NuSMV from the command line.
 	 */
 	public static final transient String NUSMV_PATH = "NuSMV";
@@ -53,6 +70,21 @@ public class NuSMVExperiment extends Experiment
 	 * The OS-dependent file separator character.
 	 */
 	protected static final transient String FILE_SEPARATOR = System.getProperty("file.separator");
+	
+	/**
+	 * The regex pattern to read memory consumption from NuSMV's output
+	 */
+	protected static final transient Pattern s_memoryPattern = Pattern.compile("Memory in use: (\\d+)");
+	
+	/**
+	 * The regex pattern to read total nodes from NuSMV's output
+	 */
+	protected static final transient Pattern s_totalNodesPattern = Pattern.compile("Peak number of nodes: (\\d+)");
+	
+	/**
+	 * The regex pattern to read live nodes from NuSMV's output
+	 */
+	protected static final transient Pattern s_liveNodesPattern = Pattern.compile("Peak number of live nodes: (\\d+)");
 	
 	/**
 	 * An object that provides a NuSMV model to the experiment.
@@ -72,6 +104,9 @@ public class NuSMVExperiment extends Experiment
 	{
 		super();
 		describe(TIME, "The time (in ms) taken to process the NuSMV model");
+		describe(MEMORY, "Total memory (in bytes) used by NuSMV");
+		describe(TOTAL_NODES, "Peak number of BDD nodes");
+		describe(LIVE_NODES, "Peak number of live BDD nodes");
 		m_modelProvider = model;
 		m_propertyProvider = property;
 		m_modelProvider.fillExperiment(this);
@@ -124,7 +159,19 @@ public class NuSMVExperiment extends Experiment
 		{
 			throw new ExperimentException("NuSMV existed with code " + outcode);
 		}
-		// TODO: parse NuSMV output and write stats into experiment
+		write(MEMORY, readIntFromOutput(output, s_memoryPattern));
+		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
+		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
+	}
+	
+	protected int readIntFromOutput(String output, Pattern pat)
+	{
+		Matcher mat = pat.matcher(output);
+		if (!mat.find())
+		{
+			return -1;
+		}
+		return Integer.parseInt(mat.group(1));
 	}
 	
 	/**
