@@ -64,5 +64,17 @@
         <zip>https://github.com/liflab/labpal/releases/download/v2.11.8/labpal-2.11.8.zip</zip>
       </files>
     </dependency>
+    <dependency>
+      <!--
+      BeepBeep (forked version with NuSMV extensions)
+      -->
+      <name>BeepBeep (fork)</name>
+      <classname>ca.uqac.lif.cep.Processor</classname>
+      <bundle>true</bundle>
+      <files>
+        <!-- When ready, URL to be changed to https://github.com/alexisBedard/beepbeep-3/archive/refs/tags/v0.10.3-nusmv.zip -->
+        <zip>https://github.com/liflab/beepbeep-3/releases/download/v0.10.3-alpha/beepbeep-3-0.10.3-alpha.zip</zip>
+      </files>
+    </dependency>
   </dependencies>
 </build>
