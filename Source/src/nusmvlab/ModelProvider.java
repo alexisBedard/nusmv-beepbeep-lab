@@ -45,6 +45,11 @@ public abstract class ModelProvider implements NuSMVProvider
 	public static final transient String DOMAIN_SIZE = "Domain size";
 	
 	/**
+	 * The name of parameter "Generation time"
+	 */
+	public static final transient String GENERATION_TIME = "Generation time";
+	
+	/**
 	 * The name of the processor chain
 	 */
 	protected String m_name;
@@ -72,5 +77,6 @@ public abstract class ModelProvider implements NuSMVProvider
 		e.setInput(QUEUE_SIZE, m_queueSize);
 		e.describe(DOMAIN_SIZE, "The cardinality of the domains in the generated SMV model");
 		e.setInput(DOMAIN_SIZE, m_domainSize);
+		e.describe(GENERATION_TIME, "Time (in ms) taken to generate the SMV model");
 	}
 }

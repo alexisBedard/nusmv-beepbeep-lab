@@ -20,6 +20,8 @@ package nusmvlab;
 import ca.uqac.lif.labpal.ExperimentFactory;
 import ca.uqac.lif.labpal.Region;
 
+import static nusmvlab.ModelProvider.GENERATION_TIME;
+
 /**
  * Creates instances of {@link NuSMVExperiment} based on parameters found in
  * a {@link Region}.
@@ -52,13 +54,16 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 	@Override
 	protected NuSMVExperiment createExperiment(Region region)
 	{
+		long start = System.currentTimeMillis();
 		ModelProvider model = m_modelLibrary.get(region);
+		long end = System.currentTimeMillis();
 		PropertyProvider prop = m_propertyLibrary.get(region);
 		if (model == null || prop == null)
 		{
 			return null;
 		}
 		NuSMVExperiment e = new NuSMVExperiment(model, prop);
+		e.write(GENERATION_TIME, end - start);
 		return e;
 	}
 }
