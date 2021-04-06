@@ -17,9 +17,11 @@
  */
 package nusmvlab;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 import ca.uqac.lif.cep.Processor;
+import ca.uqac.lif.cep.SmvFileGeneration;
 
 /**
  * Provides a NuSMV model based on a chain of BeepBeep processors.
@@ -50,9 +52,11 @@ public class BeepBeepModelProvider extends ModelProvider
 	}
 	
 	@Override
-	public void printToFile(PrintStream ps)
+	public void printToFile(PrintStream ps) throws IOException
 	{
-		// TODO: produce SMV model from start processor and given params
+		// Produce SMV model from start processor and given params
+		SmvFileGeneration myFile = new SmvFileGeneration(ps, m_queueSize);
+		myFile.generateSMV(m_start);
 	}
 
 }

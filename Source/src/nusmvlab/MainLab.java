@@ -53,8 +53,8 @@ public class MainLab extends Laboratory
 
 		// Big region
 		Region r = new Region();
-		r.addRange(DOMAIN_SIZE, 1, 3);
-		r.addRange(QUEUE_SIZE, 1, 3);
+		r.addRange(DOMAIN_SIZE, 1, 60, 5);
+		r.addRange(QUEUE_SIZE, 1, 60, 5);
 		r.add(QUERY, Q_DUMMY, Q_PASSTHROUGH);
 		r.add(PROPERTY, P_X_STAYS_NULL);
 

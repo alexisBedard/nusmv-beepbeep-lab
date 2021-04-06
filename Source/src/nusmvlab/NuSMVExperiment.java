@@ -19,8 +19,8 @@ package nusmvlab;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -121,22 +121,22 @@ public class NuSMVExperiment extends Experiment
 		try
 		{
 			ps = new PrintStream(baos, true, "UTF-8");
+			m_modelProvider.printToFile(ps);
+			if (m_propertyProvider.getLogic() == Logic.CTL)
+			{
+				ps.println("CTLSPEC");
+			}
+			else
+			{
+				ps.println("LTLSPEC");
+			}
+			m_propertyProvider.printToFile(ps);
+			ps.close();
 		}
-		catch (UnsupportedEncodingException e)
+		catch (IOException e)
 		{
 			throw new ExperimentException(e);
 		}
-		m_modelProvider.printToFile(ps);
-		if (m_propertyProvider.getLogic() == Logic.CTL)
-		{
-			ps.println("CTLSPEC");
-		}
-		else
-		{
-			ps.println("LTLSPEC");
-		}
-		m_propertyProvider.printToFile(ps);
-		ps.close();
 		String model = baos.toString();
 		long start_time = System.currentTimeMillis();
 		runNuSMV(model);

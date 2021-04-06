@@ -17,6 +17,7 @@
  */
 package nusmvlab;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 /**
@@ -30,7 +31,7 @@ public interface NuSMVProvider
 	 * Writes a NuSMV file to a PrintStream.
 	 * @param ps The stream to write to
 	 */
-	public void printToFile(/*@ non_null @*/ PrintStream ps);
+	public void printToFile(/*@ non_null @*/ PrintStream ps) throws IOException;
 	
 	/**
 	 * Writes parameters pertaining to the model into an experiment.

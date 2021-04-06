@@ -22,6 +22,7 @@ import ca.uqac.lif.labpal.Region;
 import static nusmvlab.PropertyProvider.PROPERTY;
 
 import java.io.PrintStream;
+import java.util.Collection;
 
 /**
  * Library that produces property providers based on the contents of a
@@ -33,6 +34,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	 * The name of query "Incrementing x"
 	 */
 	public static final transient String P_X_STAYS_NULL = "x stays null";
+	
+	/**
+	 * The name of query "No full queues"
+	 */
+	public static final transient String P_NO_FULL_QUEUES = "No full queues";
 	
 	/**
 	 * Creates a new instance of the library.
@@ -54,6 +60,10 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		{
 			return new XStaysNull();
 		}
+		if (name.compareTo(P_NO_FULL_QUEUES) == 0)
+		{
+			return new NoFullQueues();
+		}
 		return null;
 	}
 	
@@ -67,7 +77,64 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		@Override
 		public void printToFile(PrintStream ps)
 		{
-			ps.println("  AG (x = 0 -> AF (x = 0));");
+			ps.println("  AG (x = 0 -> AG (x = 0));");
+		}
+	}
+	
+	/**
+	 * Stipulates that no queue in a processor chain should be full. A queue
+	 * is considered full when the Boolean variable corresponding to its last
+	 * position takes the value true. Given a list of such variables, the
+	 * property stipulates that none of them may become true at any point in
+	 * an execution. 
+	 */
+	protected static class NoFullQueues extends CTLPropertyProvider
+	{
+		/**
+		 * The list of Boolean queue variables that must never be true
+		 */
+		protected String[] m_queueVars;
+		
+		/**
+		 * Creates a new instance of the property.
+		 * @param queue_vars The collection of Boolean queue variables that
+		 * must never be true
+		 */
+		public NoFullQueues(Collection<String> queue_vars)
+		{
+			super(P_NO_FULL_QUEUES);
+			m_queueVars = new String[queue_vars.size()];
+			int i = 0;
+			for (String v : queue_vars)
+			{
+				m_queueVars[i++] = v;
+			}
+		}
+		
+		/**
+		 * Creates a new instance of the property.
+		 * @param queue_vars The list of Boolean queue variables that
+		 * must never be true
+		 */
+		public NoFullQueues(String ... queue_vars)
+		{
+			super(P_NO_FULL_QUEUES);
+			m_queueVars = queue_vars;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			ps.print("! (EF (");
+			for (int i = 0; i < m_queueVars.length; i++)
+			{
+				if (i > 0)
+				{
+					ps.print(" | ");
+				}
+				ps.print(m_queueVars[i] + "");
+			}
+			ps.println("));");
 		}
 	}
 }
