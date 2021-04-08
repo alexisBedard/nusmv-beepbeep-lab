@@ -80,6 +80,7 @@ public class BeepBeepModelProvider extends ModelProvider
 		long t_start = System.currentTimeMillis();
 		sc.crawl(m_start);
 		long t_end = System.currentTimeMillis();
+		m_fileContents = baos.toString();
 		m_generationTime = t_end - t_start;
 		m_modules = sc.getModules();
 	}
@@ -87,10 +88,7 @@ public class BeepBeepModelProvider extends ModelProvider
 	@Override
 	public void printToFile(PrintStream ps) throws IOException
 	{
-		// Produce SMV model from start processor and given params
-		SmvCrawler sc = new SmvCrawler(ps, m_queueSize, m_domainSize);
-		sc.crawl(m_start);
-		m_modules = sc.getModules();
+		ps.print(m_fileContents);
 	}
 	
 	@Override
@@ -157,6 +155,37 @@ public class BeepBeepModelProvider extends ModelProvider
 			return new HashSet<SmvVariable>(0);
 		}
 		return getQueueVariables(m_modules);
+	}
+	
+	/**
+	 * Gets all the variables inside this model that correspond to queue
+	 * flags.
+	 * @return The set of queue variables
+	 */
+	public Set<Integer> getOutputPipeIds()
+	{
+		Set<Integer> vars = new HashSet<Integer>();
+		if (m_modules == null)
+		{
+			return new HashSet<Integer>(0);
+		}
+		for (SmvModule m : m_modules)
+		{
+			if (m.getName().compareTo("main") == 0)
+			{
+				for (SmvVariable v : m.getVariables())
+				{
+					String v_name = v.getName();
+					if (v_name.startsWith("oc"))
+					{
+						int id = Integer.parseInt(v_name.substring(3));
+						vars.add(id);
+					}
+				}
+				break;
+			}
+		}
+		return vars;
 	}
 
 	/**

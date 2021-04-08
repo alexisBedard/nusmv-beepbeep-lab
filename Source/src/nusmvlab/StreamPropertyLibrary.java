@@ -24,6 +24,7 @@ import static nusmvlab.PropertyProvider.PROPERTY;
 
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Library that produces property providers based on the contents of a
@@ -32,15 +33,9 @@ import java.util.Collection;
 public class StreamPropertyLibrary implements Library<PropertyProvider>
 {	
 	/**
-	 * The name of query "Incrementing x"
+	 * A library that can be used to fetch models. Some properties are expressed
+	 * differently depending on the actual NuSMV file on which they are applied.
 	 */
-	public static final transient String P_X_STAYS_NULL = "x stays null";
-	
-	/**
-	 * The name of query "No full queues"
-	 */
-	public static final transient String P_NO_FULL_QUEUES = "No full queues";
-	
 	protected transient NuSMVModelLibrary m_models;
 	
 	/**
@@ -61,32 +56,117 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		{
 			return null;
 		}
-		if (name.compareTo(P_X_STAYS_NULL) == 0)
+		if (name.compareTo(XStaysNull.NAME) == 0)
 		{
 			return new XStaysNull();
 		}
-		if (name.compareTo(P_NO_FULL_QUEUES) == 0)
+		BeepBeepModelProvider b_model = (BeepBeepModelProvider) model;
+		if (name.compareTo(Liveness.NAME) == 0)
 		{
-			if (model instanceof BeepBeepModelProvider)
-			{
-				BeepBeepModelProvider b_model = (BeepBeepModelProvider) model;;
-				return new NoFullQueues(b_model.getQueueVariables());
-			}
+			return new Liveness(b_model.getOutputPipeIds());
+		}
+		if (name.compareTo(OutputAlwaysEven.NAME) == 0)
+		{
+			return new OutputAlwaysEven(b_model.getOutputPipeIds());
+		}
+		if (name.compareTo(NoFullQueues.NAME) == 0)
+		{
+			return new NoFullQueues(b_model.getQueueVariables());
 		}
 		return null;
 	}
 	
 	protected static class XStaysNull extends CTLPropertyProvider
 	{
+		/**
+		 * The name of query "x stays nul"
+		 */
+		public static final transient String NAME = "x stays null";
+		
 		public XStaysNull()
 		{
-			super(P_X_STAYS_NULL);
+			super(NAME);
 		}
 
 		@Override
 		public void printToFile(PrintStream ps)
 		{
 			ps.println("  AG (x = 0 -> AG (x = 0));");
+		}
+	}
+	
+	/**
+	 * Stipulates that a processor chain can always output one more event.
+	 */
+	protected static class Liveness extends CTLPropertyProvider
+	{
+		/**
+		 * The name of query "Output always even"
+		 */
+		public static final transient String NAME = "Liveness";
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected Set<Integer> m_pipeIds;
+		
+		public Liveness(Set<Integer> pipe_ids)
+		{
+			super(NAME);
+			m_pipeIds = pipe_ids;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			int i = 0;
+			for (int id : m_pipeIds)
+			{
+				if (i > 0)
+				{
+					ps.print(" & ");
+				}
+				ps.print("AG (EF ob_" + id + ")");
+				i++;
+			}
+			ps.println(";");
+		}
+	}
+	
+	/**
+	 * Stipulates that the output of a processor chain is always an even number.
+	 */
+	protected static class OutputAlwaysEven extends CTLPropertyProvider
+	{
+		/**
+		 * The name of query "Output always even"
+		 */
+		public static final transient String NAME = "Output always even";
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected Set<Integer> m_pipeIds;
+		
+		public OutputAlwaysEven(Set<Integer> pipe_ids)
+		{
+			super(NAME);
+			m_pipeIds = pipe_ids;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			int i = 0;
+			for (int id : m_pipeIds)
+			{
+				if (i > 0)
+				{
+					ps.print(" & ");
+				}
+				ps.print("AG (ob_" + id + " -> (oc_" + id + " mod 2) = 0));");
+			}
+			
 		}
 	}
 	
@@ -100,6 +180,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	protected static class NoFullQueues extends CTLPropertyProvider
 	{
 		/**
+		 * The name of query "No full queues"
+		 */
+		public static final transient String NAME = "No full queues";
+		
+		/**
 		 * The list of Boolean queue variables that must never be true
 		 */
 		protected SmvVariable[] m_queueVars;
@@ -111,7 +196,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		public NoFullQueues(Collection<SmvVariable> queue_vars)
 		{
-			super(P_NO_FULL_QUEUES);
+			super(NAME);
 			m_queueVars = new SmvVariable[queue_vars.size()];
 			int i = 0;
 			for (SmvVariable v : queue_vars)
@@ -127,7 +212,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		public NoFullQueues(SmvVariable ... queue_vars)
 		{
-			super(P_NO_FULL_QUEUES);
+			super(NAME);
 			m_queueVars = queue_vars;
 		}
 

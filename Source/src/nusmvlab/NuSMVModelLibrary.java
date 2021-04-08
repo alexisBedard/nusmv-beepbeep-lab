@@ -17,9 +17,13 @@
  */
 package nusmvlab;
 
+import ca.uqac.lif.cep.Connector;
 import ca.uqac.lif.cep.Processor;
+import ca.uqac.lif.cep.functions.ApplyFunction;
 import ca.uqac.lif.cep.functions.Cumulate;
 import ca.uqac.lif.cep.functions.CumulativeFunction;
+import ca.uqac.lif.cep.functions.TurnInto;
+import ca.uqac.lif.cep.tmf.Fork;
 import ca.uqac.lif.cep.tmf.Passthrough;
 import ca.uqac.lif.cep.tmf.Window;
 import ca.uqac.lif.cep.util.Numbers;
@@ -46,9 +50,19 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	public static final transient String Q_PASSTHROUGH = "Passthrough";
 	
 	/**
-	 * The name of query "Sum of 3"
+	 * The name of query "Sum of window of width 3"
 	 */
-	public static final transient String Q_SUM_3 = "Sum of 3";
+	public static final transient String Q_SUM_3 = "Sum of window of width 3";
+	
+	/**
+	 * The name of query "Sum of 1s"
+	 */
+	public static final transient String Q_SUM_OF_1 = "Sum of 1s on window of width 3";
+	
+	/**
+	 * The name of query "Sum of doubles"
+	 */
+	public static final transient String Q_SUM_OF_DOUBLES = "Sum of doubles";
 	
 	/**
 	 * Creates a new instance of the library.
@@ -91,6 +105,18 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		if (query.compareTo(Q_SUM_3) == 0)
 		{
 			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.addition)), 3);
+		}
+		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
+		{
+			Fork f = new Fork();
+			ApplyFunction mul = new ApplyFunction(Numbers.multiplication);
+			TurnInto two = new TurnInto(2);
+			Connector.connect(f, 0, mul, 0);
+			Connector.connect(f, 0, two, 0);
+			Connector.connect(two, 0, mul, 1);
+			Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+			Connector.connect(mul, sum);
+			return f;
 		}
 		return null;
 	}
