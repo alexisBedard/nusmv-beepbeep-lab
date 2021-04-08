@@ -40,62 +40,62 @@ public class NuSMVExperiment extends Experiment
 	 * The name of attribute "Time".
 	 */
 	public static final transient String TIME = "Time";
-	
+
 	/**
 	 * The name of attribute "Memory".
 	 */
 	public static final transient String MEMORY = "Memory";
-	
+
 	/**
 	 * The name of attribute "Total BDD nodes".
 	 */
 	public static final transient String TOTAL_NODES = "Total BDD nodes";
-	
+
 	/**
 	 * The name of attribute "Live BDD nodes".
 	 */
 	public static final transient String LIVE_NODES = "Live BDD nodes";
-	
+
 	/**
 	 * The command to call to run NuSMV from the command line.
 	 */
 	public static final transient String NUSMV_PATH = "NuSMV";
-	
+
 	/**
 	 * The name of the OS's temporary directory.
 	 */
 	protected static final transient String TMP_DIR = System.getProperty("java.io.tmpdir");
-	
+
 	/**
 	 * The OS-dependent file separator character.
 	 */
 	protected static final transient String FILE_SEPARATOR = System.getProperty("file.separator");
-	
+
 	/**
 	 * The regex pattern to read memory consumption from NuSMV's output
 	 */
 	protected static final transient Pattern s_memoryPattern = Pattern.compile("Memory in use: (\\d+)");
-	
+
 	/**
 	 * The regex pattern to read total nodes from NuSMV's output
 	 */
 	protected static final transient Pattern s_totalNodesPattern = Pattern.compile("Peak number of nodes: (\\d+)");
-	
+
 	/**
 	 * The regex pattern to read live nodes from NuSMV's output
 	 */
 	protected static final transient Pattern s_liveNodesPattern = Pattern.compile("Peak number of live nodes: (\\d+)");
-	
+
 	/**
 	 * An object that provides a NuSMV model to the experiment.
 	 */
 	protected transient ModelProvider m_modelProvider;
-	
+
 	/**
 	 * An object that provides a CTL/LTL property to the experiment.
 	 */
 	protected transient PropertyProvider m_propertyProvider;
-	
+
 	/**
 	 * Creates a new instance of NuSMVExperiment.
 	 * @param model  An object that provides a NuSMV file to the experiment
@@ -112,7 +112,7 @@ public class NuSMVExperiment extends Experiment
 		m_modelProvider.fillExperiment(this);
 		m_propertyProvider.fillExperiment(this);
 	}
-	
+
 	@Override
 	public void execute() throws ExperimentException
 	{
@@ -121,16 +121,7 @@ public class NuSMVExperiment extends Experiment
 		try
 		{
 			ps = new PrintStream(baos, true, "UTF-8");
-			m_modelProvider.printToFile(ps);
-			if (m_propertyProvider.getLogic() == Logic.CTL)
-			{
-				ps.println("CTLSPEC");
-			}
-			else
-			{
-				ps.println("LTLSPEC");
-			}
-			m_propertyProvider.printToFile(ps);
+			printModel(ps);
 			ps.close();
 		}
 		catch (IOException e)
@@ -143,7 +134,26 @@ public class NuSMVExperiment extends Experiment
 		long end_time = System.currentTimeMillis();
 		write(TIME, end_time - start_time);
 	}
-	
+
+	/**
+	 * Prints the complete NuSMV model of this experiment.
+	 * @param ps The print stream where the model is to be printed 
+	 * @throws IOException Thrown if printing the model did not succeed
+	 */
+	public void printModel(PrintStream ps) throws IOException
+	{
+		m_modelProvider.printToFile(ps);
+		if (m_propertyProvider.getLogic() == Logic.CTL)
+		{
+			ps.println("CTLSPEC");
+		}
+		else
+		{
+			ps.println("LTLSPEC");
+		}
+		m_propertyProvider.printToFile(ps);
+	}
+
 	protected void runNuSMV(String model) throws ExperimentException
 	{
 		CommandRunner runner = getRunner(false, model);
@@ -163,7 +173,7 @@ public class NuSMVExperiment extends Experiment
 		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
 		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
 	}
-	
+
 	protected int readIntFromOutput(String output, Pattern pat)
 	{
 		Matcher mat = pat.matcher(output);
@@ -173,7 +183,42 @@ public class NuSMVExperiment extends Experiment
 		}
 		return Integer.parseInt(mat.group(1));
 	}
-	
+
+	/**
+	 * Called by the factory to notify the experiment that an ID has been
+	 * assigned to it. This method circumvents the fact that an experiment does
+	 * not yet know its ID when its constructor is called.
+	 * @param id The experiment's id
+	 */
+	public void tellId(int id)
+	{
+		writeDescription(id);
+	}
+
+	/**
+	 * Prepares the description text to be added to each experiment.
+	 * @param id The experiment's id
+	 */
+	protected void writeDescription(int id)
+	{
+		StringBuilder out = new StringBuilder();
+		out.append("<p>Experiment that turns a BeepBeep chain of processors into a NuSMV model, and verifies a CTL or LTL property on this model.</p>\n");
+		out.append("<p><a href=\"/view-model?id=" + id + "\">View the SMV model file</a></p>");
+		out.append("<p>The property to evaluate is:</p>\n");
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		try
+		{
+			m_propertyProvider.printToFile(ps);
+		}
+		catch (IOException e)
+		{
+			// Do nothing in such a case
+		}
+		out.append("<blockquote>").append(baos.toString()).append("</blockquote>\n");
+		setDescription(out.toString());
+	}
+
 	/**
 	 * Gets an instance of {@link CommandRunner} that calls NuSMV on the
 	 * input model.
@@ -198,25 +243,25 @@ public class NuSMVExperiment extends Experiment
 			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename(), model_filename});
 		}
 	}
-	
+
 	@Override
 	public boolean prerequisitesFulfilled()
 	{
 		return FileHelper.fileExists(getSourceFilename());
 	}
-	
+
 	@Override
 	public void fulfillPrerequisites()
 	{
 		writeSourceFile();
 	}
-	
+
 	@Override
 	public void cleanPrerequisites()
 	{
 		FileHelper.deleteFile(getSourceFilename());
 	}
-	
+
 	/**
 	 * Gets the name of the "source" file containing the batch of commands that
 	 * NuSMV should run on the input model.
@@ -226,7 +271,7 @@ public class NuSMVExperiment extends Experiment
 	{
 		return TMP_DIR + FILE_SEPARATOR + "commands.smv";
 	}
-	
+
 	/**
 	 * Writes a "source" file containing the batch of commands that NuSMV
 	 * should run on the input model. This file will be the same for all

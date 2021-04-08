@@ -18,7 +18,11 @@
 package nusmvlab;
 
 import ca.uqac.lif.cep.Processor;
+import ca.uqac.lif.cep.functions.Cumulate;
+import ca.uqac.lif.cep.functions.CumulativeFunction;
 import ca.uqac.lif.cep.tmf.Passthrough;
+import ca.uqac.lif.cep.tmf.Window;
+import ca.uqac.lif.cep.util.Numbers;
 import ca.uqac.lif.labpal.Region;
 
 import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
@@ -40,6 +44,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Passthrough"
 	 */
 	public static final transient String Q_PASSTHROUGH = "Passthrough";
+	
+	/**
+	 * The name of query "Sum of 3"
+	 */
+	public static final transient String Q_SUM_3 = "Sum of 3";
 	
 	/**
 	 * Creates a new instance of the library.
@@ -64,7 +73,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			return null;
 		}
-		return null;
+		return new BeepBeepModelProvider(start, query, queue_size, domain_size);
 	}
 	
 	/**
@@ -78,6 +87,10 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
 			return new Passthrough();
+		}
+		if (query.compareTo(Q_SUM_3) == 0)
+		{
+			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.addition)), 3);
 		}
 		return null;
 	}

@@ -19,6 +19,7 @@ package nusmvlab;
 
 import ca.uqac.lif.labpal.Laboratory;
 import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.server.WebCallback;
 import ca.uqac.lif.labpal.table.ExperimentTable;
 import ca.uqac.lif.mtnp.plot.TwoDimensionalPlot.Axis;
 import ca.uqac.lif.mtnp.plot.gnuplot.Scatterplot;
@@ -31,8 +32,13 @@ import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.NuSMVExperiment.TIME;
 import static nusmvlab.NuSMVModelLibrary.Q_DUMMY;
 import static nusmvlab.NuSMVModelLibrary.Q_PASSTHROUGH;
+import static nusmvlab.NuSMVModelLibrary.Q_SUM_3;
 import static nusmvlab.PropertyProvider.PROPERTY;
 import static nusmvlab.StreamPropertyLibrary.P_X_STAYS_NULL;
+
+import java.util.List;
+
+import static nusmvlab.StreamPropertyLibrary.P_NO_FULL_QUEUES;
 
 /**
  * The lab that evaluates NuSMV translations of BeepBeep processor chains.
@@ -48,15 +54,15 @@ public class MainLab extends Laboratory
 
 		// Experiment factory
 		NuSMVModelLibrary model_library = new NuSMVModelLibrary();
-		StreamPropertyLibrary prop_library = new StreamPropertyLibrary();
+		StreamPropertyLibrary prop_library = new StreamPropertyLibrary(model_library);
 		NuSMVExperimentFactory factory = new NuSMVExperimentFactory(this, model_library, prop_library);
 
 		// Big region
 		Region r = new Region();
-		r.addRange(DOMAIN_SIZE, 1, 60, 5);
-		r.addRange(QUEUE_SIZE, 1, 60, 5);
-		r.add(QUERY, Q_DUMMY, Q_PASSTHROUGH);
-		r.add(PROPERTY, P_X_STAYS_NULL);
+		r.addRange(DOMAIN_SIZE, 1, 10, 2);
+		r.addRange(QUEUE_SIZE, 1, 10, 2);
+		r.add(QUERY, Q_PASSTHROUGH, Q_SUM_3);
+		r.add(PROPERTY, P_NO_FULL_QUEUES);
 
 		// Running time by queue size
 		for (Region t_r : r.all(DOMAIN_SIZE))
@@ -111,6 +117,12 @@ public class MainLab extends Laboratory
 			plot.setNickname("p" + tt.getNickname());
 			add(plot);
 		}
+	}
+	
+	@Override
+	public void setupCallbacks(List<WebCallback> callbacks)
+	{
+		callbacks.add(new ModelPageCallback(this));
 	}
 
 	public static void main(String[] args)

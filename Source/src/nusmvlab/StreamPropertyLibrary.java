@@ -17,6 +17,7 @@
  */
 package nusmvlab;
 
+import ca.uqac.lif.cep.smv.SmvModule.SmvVariable;
 import ca.uqac.lif.labpal.Region;
 
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -40,18 +41,22 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	 */
 	public static final transient String P_NO_FULL_QUEUES = "No full queues";
 	
+	protected transient NuSMVModelLibrary m_models;
+	
 	/**
 	 * Creates a new instance of the library.
 	 */
-	public StreamPropertyLibrary()
+	public StreamPropertyLibrary(NuSMVModelLibrary models)
 	{
 		super();
+		m_models = models;
 	}
 	
 	@Override
 	public PropertyProvider get(Region r)
 	{
 		String name = r.getString(PROPERTY);
+		ModelProvider model = m_models.get(r);
 		if (name == null)
 		{
 			return null;
@@ -62,7 +67,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		}
 		if (name.compareTo(P_NO_FULL_QUEUES) == 0)
 		{
-			return new NoFullQueues();
+			if (model instanceof BeepBeepModelProvider)
+			{
+				BeepBeepModelProvider b_model = (BeepBeepModelProvider) model;;
+				return new NoFullQueues(b_model.getQueueVariables());
+			}
 		}
 		return null;
 	}
@@ -93,19 +102,19 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The list of Boolean queue variables that must never be true
 		 */
-		protected String[] m_queueVars;
+		protected SmvVariable[] m_queueVars;
 		
 		/**
 		 * Creates a new instance of the property.
 		 * @param queue_vars The collection of Boolean queue variables that
 		 * must never be true
 		 */
-		public NoFullQueues(Collection<String> queue_vars)
+		public NoFullQueues(Collection<SmvVariable> queue_vars)
 		{
 			super(P_NO_FULL_QUEUES);
-			m_queueVars = new String[queue_vars.size()];
+			m_queueVars = new SmvVariable[queue_vars.size()];
 			int i = 0;
-			for (String v : queue_vars)
+			for (SmvVariable v : queue_vars)
 			{
 				m_queueVars[i++] = v;
 			}
@@ -116,7 +125,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 * @param queue_vars The list of Boolean queue variables that
 		 * must never be true
 		 */
-		public NoFullQueues(String ... queue_vars)
+		public NoFullQueues(SmvVariable ... queue_vars)
 		{
 			super(P_NO_FULL_QUEUES);
 			m_queueVars = queue_vars;
@@ -132,7 +141,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" | ");
 				}
-				ps.print(m_queueVars[i] + "");
+				ps.print(m_queueVars[i].getName() + "[" + (m_queueVars[i].getSize() - 1) + "]");
 			}
 			ps.println("));");
 		}

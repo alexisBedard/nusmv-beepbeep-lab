@@ -50,6 +50,14 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 		m_modelLibrary = models;
 		m_propertyLibrary = props;
 	}
+	
+	@Override
+	public NuSMVExperiment get(Region region)
+	{
+		NuSMVExperiment e = super.get(region);
+		e.tellId(e.getId());
+		return e;
+	}
 
 	@Override
 	protected NuSMVExperiment createExperiment(Region region)
