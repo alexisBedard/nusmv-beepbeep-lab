@@ -143,6 +143,7 @@ public class NuSMVExperiment extends Experiment
 	public void printModel(PrintStream ps) throws IOException
 	{
 		m_modelProvider.printToFile(ps);
+		ps.println();
 		if (m_propertyProvider.getLogic() == Logic.CTL)
 		{
 			ps.println("CTLSPEC");

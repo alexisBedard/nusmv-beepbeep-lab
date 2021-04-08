@@ -59,9 +59,9 @@ public class MainLab extends Laboratory
 
 		// Big region
 		Region r = new Region();
-		r.addRange(DOMAIN_SIZE, 1, 10, 2);
+		r.addRange(DOMAIN_SIZE, 2, 10, 2);
 		r.addRange(QUEUE_SIZE, 1, 10, 2);
-		r.add(QUERY, Q_PASSTHROUGH, Q_SUM_3);
+		r.add(QUERY, /*Q_PASSTHROUGH,*/ Q_SUM_3);
 		r.add(PROPERTY, P_NO_FULL_QUEUES);
 
 		// Running time by queue size

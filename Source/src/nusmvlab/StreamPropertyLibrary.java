@@ -134,6 +134,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		@Override
 		public void printToFile(PrintStream ps)
 		{
+			if (m_queueVars.length == 0)
+			{
+				ps.print("TRUE");
+				return;
+			}
 			ps.print("! (EF (");
 			for (int i = 0; i < m_queueVars.length; i++)
 			{
