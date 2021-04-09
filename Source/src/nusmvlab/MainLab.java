@@ -62,12 +62,18 @@ public class MainLab extends Laboratory
 		setAuthor("Alexis Bédard and Sylvain Hallé");
 
 		// Big region
-		Region r = new Region();
-		r.add(QUERY, Q_PASSTHROUGH); //, Q_SUM_3, Q_SUM_OF_DOUBLES);		
-		for (Region q_r : r.all(QUERY))
 		{
-			setupQueueDomain(q_r.getString(QUERY), NoFullQueues.NAME, Liveness.NAME);
+			Region r = new Region();
+			r.add(QUERY, Q_PASSTHROUGH); //, Q_SUM_3, Q_SUM_OF_DOUBLES);		
+			for (Region q_r : r.all(QUERY))
+			{
+				setupQueueDomain(q_r.getString(QUERY), NoFullQueues.NAME, Liveness.NAME);
+			}
 		}
+		
+		// Stats
+		add(new LabStats(this));
+		add(new ModelStats(this));
 	}
 
 	/**

@@ -155,6 +155,14 @@ public class NuSMVExperiment extends Experiment
 		m_propertyProvider.printToFile(ps);
 	}
 
+	/**
+	 * Runs NuSMV on a model file. The model file is first written to an external
+	 * file, after which NuSMV is called and its output is parsed to extract some
+	 * data about its execution.
+	 * @param model The model to process with NuSMV
+	 * @throws ExperimentException Thrown if the call to NuSMV did not succeed
+	 * for some reason
+	 */
 	protected void runNuSMV(String model) throws ExperimentException
 	{
 		CommandRunner runner = getRunner(false, model);
@@ -175,6 +183,12 @@ public class NuSMVExperiment extends Experiment
 		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
 	}
 
+	/**
+	 * Extracts an integer number from a regex expression.
+	 * @param output The string where to apply the regex
+	 * @param pat The pattern to look for
+	 * @return The integer parsed from the pattern
+	 */
 	protected int readIntFromOutput(String output, Pattern pat)
 	{
 		Matcher mat = pat.matcher(output);
@@ -243,6 +257,24 @@ public class NuSMVExperiment extends Experiment
 			FileHelper.writeFromString(new File(model_filename), model);
 			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename(), model_filename});
 		}
+	}
+	
+	/**
+	 * Gets the model provider associated to this experiment.
+	 * @return The model provider
+	 */
+	public ModelProvider getModelProvider()
+	{
+		return m_modelProvider;
+	}
+	
+	/**
+	 * Gets the property provider associated to this experiment.
+	 * @return The property provider
+	 */
+	public PropertyProvider getPropertyProvider()
+	{
+		return m_propertyProvider;
 	}
 
 	@Override

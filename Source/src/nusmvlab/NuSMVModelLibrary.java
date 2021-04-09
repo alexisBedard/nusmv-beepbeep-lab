@@ -32,6 +32,7 @@ import ca.uqac.lif.labpal.Region;
 import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
 import static nusmvlab.BeepBeepModelProvider.QUERY;
 import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
+import static nusmvlab.BeepBeepModelProvider.K;
 
 /**
  * Library that produces NUSMV model providers based on the contents of a
@@ -57,7 +58,12 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	/**
 	 * The name of query "Sum of 1s"
 	 */
-	public static final transient String Q_SUM_OF_1 = "Sum of 1s on window of width 3";
+	public static final transient String Q_WIN_SUM_OF_1 = "Sum of 1s on window";
+	
+	/**
+	 * The name of query "1 times k"
+	 */
+	public static final transient String Q_SUM_OF_f1 = "Sum of 1s on window ";
 	
 	/**
 	 * The name of query "Sum of doubles"
@@ -78,16 +84,21 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		String query = r.getString(QUERY);
 		int domain_size = r.getInt(DOMAIN_SIZE);
 		int queue_size = r.getInt(QUEUE_SIZE);
+		int k = -1;
+		if (r.hasDimension(K))
+		{
+			k = r.getInt(K);
+		}
 		if (query.compareTo(Q_DUMMY) == 0)
 		{
 			return new DummyModelProvider(queue_size, domain_size);
 		}
-		Processor start = getProcessorChain(query);
+		Processor start = getProcessorChain(query, k);
 		if (start == null)
 		{
 			return null;
 		}
-		return new BeepBeepModelProvider(start, query, queue_size, domain_size);
+		return new BeepBeepModelProvider(start, query, queue_size, domain_size, k);
 	}
 	
 	/**
@@ -96,7 +107,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * @param query The name of the chain to create
 	 * @return A reference to the first processor of the chain
 	 */
-	protected static Processor getProcessorChain(String query)
+	protected static Processor getProcessorChain(String query, int k)
 	{
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
@@ -104,7 +115,9 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		if (query.compareTo(Q_SUM_3) == 0)
 		{
-			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.addition)), 3);
+			// Window width is 3 if not specified
+			int width = k > 0 ? k : 3;
+			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.addition)), width);
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{

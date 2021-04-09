@@ -1,0 +1,23 @@
+{
+  "Satchmo" : {
+  	"OS" : "Ubuntu 16.04",
+  	"CPU" : "Intel Xeon quad-core 2.66 GHz",
+  	"RAM": "4 GB"
+  },
+  "Kuujjuaq" : {
+  	"OS" : "Ubuntu 18.04",
+  	"CPU" : "AMD Athlon II X4 640 1.8 GHz",
+  	"RAM": "16 GB"
+  },
+  "Alakazuk" : {
+  	"OS" : "Windows 10",
+  	"CPU" : "Intel Bay Trail-T Quad Core Z3775 1.46 GHz",
+  	"model": "Asus Transformer Book T200",
+  	"RAM": "2 GB"
+  },
+  "Symphorien" : {
+  	"OS" : "Ubuntu 18.04",
+  	"CPU" : "Intel CORE i5-7200U 2.5 GHz",
+  	"RAM": "8 GB"
+  }
+}
