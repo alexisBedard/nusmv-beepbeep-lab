@@ -86,42 +86,4 @@ public class ModelStats extends MacroMap
 		paramMap.put("maxdomainsize", new JsonNumber(max_domain));
 		paramMap.put("nummodels", new JsonNumber(ids.size()));
 	}
-	
-	protected static class ModelId
-	{
-		protected String m_name;
-		
-		protected int m_queueSize;
-		
-		protected int m_domainSize;
-		
-		protected int m_k;
-		
-		public ModelId(NuSMVExperiment e)
-		{
-			super();
-			m_name = e.readString(QUERY);
-			m_queueSize = e.readInt(QUEUE_SIZE);
-			m_domainSize = e.readInt(DOMAIN_SIZE);
-			m_k = e.readInt(K);
-		}
-		
-		@Override
-		public int hashCode()
-		{
-			return m_name.hashCode();
-		}
-		
-		@Override
-		public boolean equals(Object o)
-		{
-			if (o == null || !(o instanceof ModelId))
-			{
-				return false;
-			}
-			ModelId m = (ModelId) o;
-			return m.m_k == m_k && m.m_queueSize == m_queueSize && m.m_domainSize == m_domainSize
-					&& m.m_name.compareTo(m_name) == 0;
-		}
-	}
 }

@@ -34,6 +34,10 @@ import ca.uqac.lif.labpal.Region;
 import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
 import static nusmvlab.BeepBeepModelProvider.QUERY;
 import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import static nusmvlab.BeepBeepModelProvider.K;
 
 /**
@@ -81,6 +85,8 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Output if smaller than k"
 	 */
 	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
+	
+	protected transient Map<ModelId,Processor> m_cache;
 
 	/**
 	 * Creates a new instance of the library.
@@ -88,6 +94,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	public NuSMVModelLibrary()
 	{
 		super();
+		m_cache = new HashMap<ModelId,Processor>();
 	}
 
 	@Override
@@ -106,7 +113,17 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			return new DummyModelProvider(queue_size, domain_size);
 		}
-		Processor start = getProcessorChain(r, c);
+		ModelId m = new ModelId(r);
+		Processor start = null;
+		if (m_cache.containsKey(m)) 
+		{
+			start = m_cache.get(m);
+		}
+		else
+		{
+			start = getProcessorChain(r, c);
+			m_cache.put(m, start);
+		}
 		if (start == null)
 		{
 			return null;
