@@ -106,7 +106,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			return new DummyModelProvider(queue_size, domain_size);
 		}
-		Processor start = getProcessorChain(query, c);
+		Processor start = getProcessorChain(r, c);
 		if (start == null)
 		{
 			return null;
@@ -117,11 +117,13 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	/**
 	 * Creates a chain of BeepBeep processors, based on a textual name.
 	 * This method is used internally by {@link #getModel(Region, int, int)}. 
+	 * @param r The region corresponding to the chain to create
 	 * @param query The name of the chain to create
 	 * @return A reference to the first processor of the chain
 	 */
-	protected static Processor getProcessorChain(String query, Count c)
+	protected static Processor getProcessorChain(Region r, Count c)
 	{
+		String query = r.getString(QUERY);
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
 			return new Passthrough();
@@ -150,6 +152,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
+			if (r.getInt(DOMAIN_SIZE) < 3)
+			{
+				// This query is only possible if domain contains number 2
+				return null;
+			}
 			Fork f = new Fork();
 			ApplyFunction mul = new ApplyFunction(Numbers.multiplication);
 			TurnInto two = new TurnInto(2);

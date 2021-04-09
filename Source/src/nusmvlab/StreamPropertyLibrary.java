@@ -52,7 +52,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	{
 		String name = r.getString(PROPERTY);
 		ModelProvider model = m_models.get(r);
-		if (name == null)
+		if (name == null || model == null)
 		{
 			return null;
 		}

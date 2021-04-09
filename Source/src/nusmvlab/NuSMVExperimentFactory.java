@@ -55,7 +55,10 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 	public NuSMVExperiment get(Region region)
 	{
 		NuSMVExperiment e = super.get(region);
-		e.tellId(e.getId());
+		if (e != null)
+		{
+			e.tellId(e.getId());
+		}
 		return e;
 	}
 

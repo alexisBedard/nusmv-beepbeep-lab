@@ -68,7 +68,7 @@ public class MainLab extends Laboratory
 			Group g = new Group("Impact of queue size and domain size");
 			add(g);
 			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+			r.add(QUERY, /*Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K,*/ Q_SUM_OF_DOUBLES /*, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K*/);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
 			r.addRange(DOMAIN_SIZE, 2, 10, 2);
 			r.addRange(QUEUE_SIZE, 1, 10, 2);
