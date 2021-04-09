@@ -75,6 +75,11 @@ public class BeepBeepModelProvider extends ModelProvider
 	protected int m_numProcessors;
 	
 	/**
+   * An internal URL to the picture that represents the processor chain.
+   */
+  protected transient String m_imageUrl = null;
+	
+	/**
 	 * Creates a new instance of model provider.
 	 * @param start The processor instance at the start of the chain
 	 * @param name A (textual) name given to the model in question 
@@ -84,8 +89,10 @@ public class BeepBeepModelProvider extends ModelProvider
 	 * that requires a parameter (such as a window width or a decimation
 	 * interval); this additional value is represented by this abstract
 	 * parameter.
+	 * @param image_url An URL corresponding to the image for that processor
+	 * chain. Set to <tt>null</tt> if no image is available.
 	 */
-	public BeepBeepModelProvider(Processor start, String name, int queue_size, int domain_size, int k)
+	public BeepBeepModelProvider(Processor start, String name, int queue_size, int domain_size, int k, String image_url)
 	{
 		super(name, queue_size, domain_size);
 		m_parameter = k;
@@ -99,7 +106,7 @@ public class BeepBeepModelProvider extends ModelProvider
 		m_fileContents = baos.toString();
 		m_generationTime = t_end - t_start;
 		m_modules = sc.getModules();
-		
+		m_imageUrl = image_url;
 	}
 	
 	@Override
@@ -117,6 +124,11 @@ public class BeepBeepModelProvider extends ModelProvider
 		e.write(NUM_VARIABLES, countVariables());
 		e.describe(QUEUE_VARIABLES, "The number of variables in the model corresponding to queues");
 		e.write(QUEUE_VARIABLES, getQueueVariables().size());
+		if (m_parameter > 0)
+		{
+			e.describe(K, "The value of parameter k in the processor chain");
+			e.setInput(K, m_parameter);
+		}
 	}
 	
 	/**
@@ -138,6 +150,15 @@ public class BeepBeepModelProvider extends ModelProvider
 			}
 		}
 		return vars.size();
+	}
+	
+	/**
+	 * Gets the URL associated to the picture for this processor chain.
+	 * @return The URL, or <tt>null</tt> if no image exists
+	 */
+	public String getImageUrl()
+	{
+		return m_imageUrl;
 	}
 	
 	/**

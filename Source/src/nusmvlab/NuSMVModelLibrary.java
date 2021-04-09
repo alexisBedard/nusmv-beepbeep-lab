@@ -23,6 +23,8 @@ import ca.uqac.lif.cep.functions.ApplyFunction;
 import ca.uqac.lif.cep.functions.Cumulate;
 import ca.uqac.lif.cep.functions.CumulativeFunction;
 import ca.uqac.lif.cep.functions.TurnInto;
+import ca.uqac.lif.cep.tmf.CountDecimate;
+import ca.uqac.lif.cep.tmf.Filter;
 import ca.uqac.lif.cep.tmf.Fork;
 import ca.uqac.lif.cep.tmf.Passthrough;
 import ca.uqac.lif.cep.tmf.Window;
@@ -44,32 +46,42 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Dummy"
 	 */
 	public static final transient String Q_DUMMY = "Dummy";
-	
+
 	/**
 	 * The name of query "Passthrough"
 	 */
 	public static final transient String Q_PASSTHROUGH = "Passthrough";
-	
+
 	/**
 	 * The name of query "Sum of window of width 3"
 	 */
-	public static final transient String Q_SUM_3 = "Sum of window of width 3";
-	
+	public static final transient String Q_PRODUCT_WINDOW_K = "Sum of window of width 3";
+
 	/**
 	 * The name of query "Sum of 1s"
 	 */
 	public static final transient String Q_WIN_SUM_OF_1 = "Sum of 1s on window";
-	
-	/**
-	 * The name of query "1 times k"
-	 */
-	public static final transient String Q_SUM_OF_f1 = "Sum of 1s on window ";
-	
+
 	/**
 	 * The name of query "Sum of doubles"
 	 */
 	public static final transient String Q_SUM_OF_DOUBLES = "Sum of doubles";
-	
+
+	/**
+	 * The name of query "Product"
+	 */
+	public static final transient String Q_PRODUCT = "Product";
+
+	/**
+	 * The name of query "Product of 1 and k-th"
+	 */
+	public static final transient String Q_PRODUCT_1_K = "Product of 1 and k-th";
+
+	/**
+	 * The name of query "Output if smaller than k"
+	 */
+	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
+
 	/**
 	 * Creates a new instance of the library.
 	 */
@@ -77,47 +89,64 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	{
 		super();
 	}
-	
+
 	@Override
 	public ModelProvider get(Region r)
 	{
 		String query = r.getString(QUERY);
 		int domain_size = r.getInt(DOMAIN_SIZE);
 		int queue_size = r.getInt(QUEUE_SIZE);
-		int k = -1;
+		Count c = new Count();
+		c.x = -1;
 		if (r.hasDimension(K))
 		{
-			k = r.getInt(K);
+			c.x = r.getInt(K);
 		}
 		if (query.compareTo(Q_DUMMY) == 0)
 		{
 			return new DummyModelProvider(queue_size, domain_size);
 		}
-		Processor start = getProcessorChain(query, k);
+		Processor start = getProcessorChain(query, c);
 		if (start == null)
 		{
 			return null;
 		}
-		return new BeepBeepModelProvider(start, query, queue_size, domain_size, k);
+		return new BeepBeepModelProvider(start, query, queue_size, domain_size, c.x, getImageUrl(query));
 	}
-	
+
 	/**
 	 * Creates a chain of BeepBeep processors, based on a textual name.
 	 * This method is used internally by {@link #getModel(Region, int, int)}. 
 	 * @param query The name of the chain to create
 	 * @return A reference to the first processor of the chain
 	 */
-	protected static Processor getProcessorChain(String query, int k)
+	protected static Processor getProcessorChain(String query, Count c)
 	{
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
 			return new Passthrough();
 		}
-		if (query.compareTo(Q_SUM_3) == 0)
+		if (query.compareTo(Q_PRODUCT) == 0)
+		{
+			return new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication));
+		}
+		if (query.compareTo(Q_PRODUCT_1_K) == 0)
+		{
+			// Decimation interval is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			Fork f = new Fork();
+			ApplyFunction mul = new ApplyFunction(Numbers.multiplication);
+			CountDecimate dec = new CountDecimate(c.x);
+			Connector.connect(f, 0, mul, 0);
+			Connector.connect(f, 0, dec, 0);
+			Connector.connect(dec, 0, mul, 1);
+			return f;
+		}
+		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
 		{
 			// Window width is 3 if not specified
-			int width = k > 0 ? k : 3;
-			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.addition)), width);
+			c.x = c.x > 0 ? c.x : 3;
+			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
@@ -131,6 +160,82 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(mul, sum);
 			return f;
 		}
+		if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
+		{
+			// Window width is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			TurnInto one = new TurnInto(1);
+			Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+			Connector.connect(one, sum);
+			Window win = new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
+			Connector.connect(sum, win);
+			return one;
+		}
+		if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
+		{
+			// Parameter value is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			Fork f = new Fork(3);
+			Filter filter = new Filter();
+			Connector.connect(f, 0, filter, 0);
+			TurnInto turn_k = new TurnInto(c.x);
+			Connector.connect(f, 1, turn_k, 0);
+			TurnInto turn_1 = new TurnInto(1);
+			Connector.connect(f, 2, turn_1, 0);
+			Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+			Connector.connect(turn_1, sum);
+			ApplyFunction gt = new ApplyFunction(Numbers.isGreaterOrEqual);
+			Connector.connect(turn_k, 0, gt, 0);
+			Connector.connect(sum, 0, gt, 1);
+			Connector.connect(gt, 0, filter, 1);
+			return f;
+		}
 		return null;
+	}
+
+	/**
+	 * Gets the image URL associated to a processor chain.
+	 * @param query The name of the processor chain
+	 * @return The URL, or <tt>null</tt> if no image is available
+	 */
+	protected static String getImageUrl(String query)
+	{
+		if (query.compareTo(Q_PASSTHROUGH) == 0)
+		{
+			return "/resource/Passthrough.png";
+		}
+		if (query.compareTo(Q_PRODUCT) == 0)
+		{
+			return "/resource/Product.png";
+		}
+		if (query.compareTo(Q_PRODUCT_1_K) == 0)
+		{
+			return "/resource/Product1_k.png";
+		}
+		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
+		{
+			return "/resource/SumOfDoubles.png";
+		}
+		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
+		{
+			return "/resource/ProductWindow_k.png";
+		}
+		if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
+		{
+			return "/resource/SumOfOnesWindow_k.png";
+		}
+		if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
+		{
+			return "/resource/OutputIfSmallerThan_k.png";
+		}
+		return null;
+	}
+	
+	/**
+	 * Ugly hack to pass an integer by reference to a method.
+	 */
+	protected static class Count
+	{
+		public int x = 0;
 	}
 }

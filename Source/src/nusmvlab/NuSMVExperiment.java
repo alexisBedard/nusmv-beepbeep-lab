@@ -218,6 +218,11 @@ public class NuSMVExperiment extends Experiment
 	{
 		StringBuilder out = new StringBuilder();
 		out.append("<p>Experiment that turns a BeepBeep chain of processors into a NuSMV model, and verifies a CTL or LTL property on this model.</p>\n");
+		String image_url = ((BeepBeepModelProvider) m_modelProvider).getImageUrl();
+		if (image_url != null)
+		{
+			out.append("<img src=\"" + image_url + "\" alt=\"Processor chain\" />\n");
+		}
 		out.append("<p><a href=\"/view-model?id=" + id + "\">View the SMV model file</a></p>");
 		out.append("<p>The property to evaluate is:</p>\n");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
