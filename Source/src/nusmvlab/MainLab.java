@@ -68,10 +68,10 @@ public class MainLab extends Laboratory
 			Group g = new Group("Impact of queue size and domain size");
 			add(g);
 			Region r = new Region();
-			r.add(QUERY, /*Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K,*/ Q_SUM_OF_DOUBLES /*, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K*/);
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
-			r.addRange(DOMAIN_SIZE, 2, 4, 2);
-			r.addRange(QUEUE_SIZE, 1, 3, 1);
+			r.addRange(DOMAIN_SIZE, 2, 5, 1);
+			r.addRange(QUEUE_SIZE, 1, 4, 1);
 			for (Region q_r : r.all(QUERY))
 			{
 				setupQueueDomain(q_r, g);
@@ -114,17 +114,16 @@ public class MainLab extends Laboratory
 		{
 			// Varying queue size
 			String latex_query = LatexNamer.latexify(query);
+			boolean added = false;
 			for (Region t_r : r.all(DOMAIN_SIZE))
 			{
 				String latex_params = LatexNamer.latexify("D" + t_r.getInt(DOMAIN_SIZE));
 				ExperimentTable et_time = new ExperimentTable(PROPERTY, QUEUE_SIZE, TIME);
 				et_time.setTitle("Running time by queue size for " + query + " (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
 				et_time.setShowInList(false);
-				add(et_time);
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
 				et_mem.setTitle("Memory consumption by queue size for " + query + " (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
 				et_mem.setShowInList(false);
-				add(et_time);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, QUEUE_SIZE))
 				{
 					NuSMVExperiment e = m_factory.get(t_q);
@@ -132,6 +131,7 @@ public class MainLab extends Laboratory
 					{
 						continue;
 					}
+					added = true;
 					et_time.add(e);
 					et_mem.add(e);
 					if (g != null)
@@ -142,21 +142,22 @@ public class MainLab extends Laboratory
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 				tt_time.setTitle(et_time.getTitle());
 				tt_time.setNickname("tTimeQueue" + latex_query + latex_params);
-				add(tt_time);
 				Scatterplot plot_time = new Scatterplot(tt_time);
 				plot_time.setTitle(tt_time.getTitle());
 				plot_time.setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Time (ms)");
 				plot_time.setNickname("p" + tt_time.getNickname());
-				add(plot_time);
 				TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
-				add(tt_mem);
 				Scatterplot plot_mem = new Scatterplot(tt_mem);
 				plot_mem.setTitle(tt_mem.getTitle());
 				plot_mem.setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Memory (B)");
-				plot_mem.setNickname("p" + tt_mem.getNickname());
-				add(plot_mem);
+				plot_mem.setNickname("p" + tt_mem.getNickname());				
+				if (added)
+				{
+					add(et_time, tt_time, et_mem, tt_mem);
+					add(plot_time, plot_mem);
+				}
 			}
 		}
 		{
@@ -164,15 +165,14 @@ public class MainLab extends Laboratory
 			String latex_query = LatexNamer.latexify(query);
 			for (Region t_r : r.all(QUEUE_SIZE))
 			{
+				boolean added = false;
 				String latex_params = LatexNamer.latexify("Q" + t_r.getInt(QUEUE_SIZE));
 				ExperimentTable et_time = new ExperimentTable(PROPERTY, DOMAIN_SIZE, TIME);
 				et_time.setTitle("Running time by domain size for " + query + " (queues = " + t_r.getInt(QUEUE_SIZE) + ")");
 				et_time.setShowInList(false);
-				add(et_time);
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, DOMAIN_SIZE, MEMORY);
 				et_mem.setTitle("Memory consumption by domain size for " + query + " (queues = " + t_r.getInt(QUEUE_SIZE) + ")");
 				et_mem.setShowInList(false);
-				add(et_time);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, DOMAIN_SIZE))
 				{
 					NuSMVExperiment e = m_factory.get(t_q);
@@ -180,6 +180,7 @@ public class MainLab extends Laboratory
 					{
 						continue;
 					}
+					added = true;
 					et_time.add(e);
 					et_mem.add(e);
 					if (g != null)
@@ -190,21 +191,22 @@ public class MainLab extends Laboratory
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 				tt_time.setTitle(et_time.getTitle());
 				tt_time.setNickname("tTimeQueue" + latex_query + latex_params);
-				add(tt_time);
 				Scatterplot plot_time = new Scatterplot(tt_time);
 				plot_time.setTitle(tt_time.getTitle());
 				plot_time.setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Time (ms)");
 				plot_time.setNickname("p" + tt_time.getNickname());
-				add(plot_time);
 				TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
-				add(tt_mem);
 				Scatterplot plot_mem = new Scatterplot(tt_mem);
 				plot_mem.setTitle(tt_mem.getTitle());
 				plot_mem.setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Memory (B)");
 				plot_mem.setNickname("p" + tt_mem.getNickname());
-				add(plot_mem);
+				if (added)
+				{
+					add(et_time, tt_time, et_mem, tt_mem);
+					add(plot_time, plot_mem);
+				}
 			}
 		}
 	}
@@ -223,16 +225,15 @@ public class MainLab extends Laboratory
 		String query = r.getString(QUERY);
 		{
 			// Varying K
+			boolean added = false;
 			String latex_query = LatexNamer.latexify(query);
 			String latex_params = LatexNamer.latexify("D" + r.getInt(DOMAIN_SIZE) + "Q" + r.getInt(QUEUE_SIZE));
 			ExperimentTable et_time = new ExperimentTable(PROPERTY, QUEUE_SIZE, TIME);
 			et_time.setTitle("Running time by value of k for " + query + " (domain = " + r.getInt(DOMAIN_SIZE) + ", queues = " + r.getInt(QUEUE_SIZE) + ")");
 			et_time.setShowInList(false);
-			add(et_time);
 			ExperimentTable et_mem = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
 			et_mem.setTitle("Memory consumption by value of k for " + query + " (domain = " + r.getInt(DOMAIN_SIZE) + ", queues = " + r.getInt(QUEUE_SIZE) + ")");
 			et_mem.setShowInList(false);
-			add(et_time);
 			for (Region t_q : r.all(QUERY, PROPERTY, K))
 			{
 				NuSMVExperiment e = m_factory.get(t_q);
@@ -240,6 +241,7 @@ public class MainLab extends Laboratory
 				{
 					continue;
 				}
+				added = true;
 				et_time.add(e);
 				et_mem.add(e);
 				if (g != null)
@@ -250,21 +252,22 @@ public class MainLab extends Laboratory
 			TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 			tt_time.setTitle(et_time.getTitle());
 			tt_time.setNickname("tTimeK" + latex_query + latex_params);
-			add(tt_time);
 			Scatterplot plot_time = new Scatterplot(tt_time);
 			plot_time.setTitle(tt_time.getTitle());
 			plot_time.setCaption(Axis.X, "K").setCaption(Axis.Y, "Time (ms)");
 			plot_time.setNickname("p" + tt_time.getNickname());
-			add(plot_time);
 			TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 			tt_mem.setTitle(et_mem.getTitle());
 			tt_mem.setNickname("tmemK" + latex_query + latex_params);
-			add(tt_mem);
 			Scatterplot plot_mem = new Scatterplot(tt_mem);
 			plot_mem.setTitle(tt_mem.getTitle());
 			plot_mem.setCaption(Axis.X, "K").setCaption(Axis.Y, "Memory (B)");
 			plot_mem.setNickname("p" + tt_mem.getNickname());
-			add(plot_mem);
+			if (added)
+			{
+				add(et_time, tt_time, et_mem, tt_mem);
+				add(plot_time, plot_mem);
+			}
 		}
 	}
 

@@ -199,6 +199,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			// Parameter value is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
+			if (r.getInt(DOMAIN_SIZE) <= c.x)
+			{
+				// This query is only possible if domain contains number k
+				return null;
+			}
 			Fork f = new Fork(3);
 			Filter filter = new Filter();
 			Connector.connect(f, 0, filter, 0);

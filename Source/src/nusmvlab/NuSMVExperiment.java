@@ -55,6 +55,16 @@ public class NuSMVExperiment extends Experiment
 	 * The name of attribute "Live BDD nodes".
 	 */
 	public static final transient String LIVE_NODES = "Live BDD nodes";
+	
+	/**
+	 * The name of attribute "Verdict".
+	 */
+	public static final transient String VERDICT = "Verdict";
+	
+	/**
+	 * The name of attribute "Witness length".
+	 */
+	public static final transient String WITNESS_LENGTH = "Witness length";
 
 	/**
 	 * The command to call to run NuSMV from the command line.
@@ -85,6 +95,11 @@ public class NuSMVExperiment extends Experiment
 	 * The regex pattern to read live nodes from NuSMV's output
 	 */
 	protected static final transient Pattern s_liveNodesPattern = Pattern.compile("Peak number of live nodes: (\\d+)");
+	
+	/**
+	 * The regex pattern to identify states of a counter-example trace
+	 */
+	protected static final transient Pattern s_witnessPattern = Pattern.compile("State: (\\d+)\\.(\\d+)");
 
 	/**
 	 * An object that provides a NuSMV model to the experiment.
@@ -107,6 +122,8 @@ public class NuSMVExperiment extends Experiment
 		describe(MEMORY, "Total memory (in bytes) used by NuSMV");
 		describe(TOTAL_NODES, "Peak number of BDD nodes");
 		describe(LIVE_NODES, "Peak number of live BDD nodes");
+		describe(VERDICT, "The verdict calculated by NuSMV on the evaluation of the property");
+		describe(WITNESS_LENGTH, "The length of the counter-example trace if one is provided");
 		m_modelProvider = model;
 		m_propertyProvider = property;
 		m_modelProvider.fillExperiment(this);
@@ -178,9 +195,34 @@ public class NuSMVExperiment extends Experiment
 		{
 			throw new ExperimentException("NuSMV existed with code " + outcode);
 		}
+		parseResults(output);
+	}
+	
+	/**
+	 * Parses the results output by NuSMV and fills experiment parameters.
+	 * @param output The string containing the standard output as written to by
+	 * NuSMV
+	 */
+	protected void parseResults(String output)
+	{
 		write(MEMORY, readIntFromOutput(output, s_memoryPattern));
 		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
 		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
+		if (output.contains("is false"))
+		{
+			write(VERDICT, "False");
+		}
+		if (output.contains("is true"))
+		{
+			write(VERDICT, "True");
+		}
+		int w_len = 0;
+		Matcher mat = s_witnessPattern.matcher(output);
+		while (mat.find())
+		{
+			w_len++;
+		}
+		write(WITNESS_LENGTH, w_len);
 	}
 
 	/**
