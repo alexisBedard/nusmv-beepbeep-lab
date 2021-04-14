@@ -75,6 +75,7 @@ public class NuSMVExperiment extends Experiment
 	 * The name of attribute "Total states".
 	 */
 	public static final transient String TOTAL_STATES = "Total states";
+	
 	/**
 	 * The name of attribute "System diameter".
 	 */

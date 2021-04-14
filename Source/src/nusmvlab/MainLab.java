@@ -24,11 +24,14 @@ import ca.uqac.lif.labpal.Region;
 import ca.uqac.lif.labpal.server.WebCallback;
 import ca.uqac.lif.labpal.table.ExperimentTable;
 import ca.uqac.lif.mtnp.plot.TwoDimensionalPlot.Axis;
+import ca.uqac.lif.mtnp.plot.gnuplot.ClusteredHistogram;
 import ca.uqac.lif.mtnp.plot.gnuplot.Scatterplot;
 import ca.uqac.lif.mtnp.table.ExpandAsColumns;
 import ca.uqac.lif.mtnp.table.TransformedTable;
+import nusmvlab.StreamPropertyLibrary.BoundedLiveness;
 import nusmvlab.StreamPropertyLibrary.Liveness;
 import nusmvlab.StreamPropertyLibrary.NoFullQueues;
+import nusmvlab.StreamPropertyLibrary.OutputAlwaysTrue;
 
 import static nusmvlab.BeepBeepModelProvider.K;
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
@@ -36,6 +39,8 @@ import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.NuSMVExperiment.MEMORY;
 import static nusmvlab.NuSMVExperiment.TIME;
+import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_WINDOW_SUM_3;
+import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_PASSTHROUGH_DELAY;
 import static nusmvlab.NuSMVModelLibrary.Q_OUTPUT_IF_SMALLER_K;
 import static nusmvlab.NuSMVModelLibrary.Q_PASSTHROUGH;
 import static nusmvlab.NuSMVModelLibrary.Q_PRODUCT_1_K;
@@ -96,9 +101,59 @@ public class MainLab extends Laboratory
 			}
 		}
 		
-		// Punctual experiments
+		// Comparison of processor chains on all properties, for a fixed queue size and domain size
 		{
-			// TODO
+			Group g = new Group("Impact of query");
+			g.setDescription("Comparison of processor chains on all properties, for a fixed queue size and domain size");
+			add(g);
+			Region r = new Region();
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME);
+			r.add(DOMAIN_SIZE, 4);
+			r.add(QUEUE_SIZE, 3);
+			ExperimentTable et_time = new ExperimentTable(QUERY, PROPERTY, TIME);
+			et_time.setShowInList(false);
+			add(et_time);
+			TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
+			tt_time.setNickname("tEquivalenceTime");
+			add(tt_time);
+			ClusteredHistogram ch = new ClusteredHistogram(tt_time);
+			ch.setTitle(tt_time.getTitle());
+			add(ch);
+			for (Region q_r : r.all(QUERY, PROPERTY))
+			{
+				NuSMVExperiment e = m_factory.get(q_r);
+				if (e == null)
+				{
+					continue;
+				}
+				et_time.add(e);
+				g.add(e);
+			}
+		}
+		
+		// Punctual experiments
+		if (false) {
+			Group g = new Group("Processor equivalence");
+			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream.");
+			add(g);
+			Region r = new Region();
+			r.add(QUERY, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
+			r.add(PROPERTY, OutputAlwaysTrue.NAME);
+			r.add(QUEUE_SIZE, 2);
+			r.add(DOMAIN_SIZE, 3);
+			ExperimentTable et = new ExperimentTable(QUERY, TIME);
+			et.setNickname("tEquivalenceTime");
+			add(et);
+			for (Region q_r : r.all(QUERY))
+			{
+				NuSMVExperiment e = m_factory.get(q_r);
+				if (e == null)
+				{
+					continue;
+				}
+				et.add(e);
+			}
 		}
 
 		// Stats

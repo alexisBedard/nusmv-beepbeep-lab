@@ -65,6 +65,10 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		{
 			return new Liveness(b_model.getOutputPipeIds());
 		}
+		if (name.compareTo(BoundedLiveness.NAME) == 0)
+		{
+			return new BoundedLiveness(b_model.getOutputPipeIds());
+		}
 		if (name.compareTo(OutputAlwaysEven.NAME) == 0)
 		{
 			return new OutputAlwaysEven(b_model.getOutputPipeIds());
@@ -127,6 +131,44 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 					ps.print(" & ");
 				}
 				ps.print("AG (EF ob_" + id + ")");
+				i++;
+			}
+			ps.println(";");
+		}
+	}
+	
+	/**
+	 * Stipulates that a processor chain can always output one more event.
+	 */
+	protected static class BoundedLiveness extends LTLPropertyProvider
+	{
+		/**
+		 * The name of query "Bounded liveness"
+		 */
+		public static final transient String NAME = "Bounded liveness";
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected Set<Integer> m_pipeIds;
+		
+		public BoundedLiveness(Set<Integer> pipe_ids)
+		{
+			super(NAME);
+			m_pipeIds = pipe_ids;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			int i = 0;
+			for (int id : m_pipeIds)
+			{
+				if (i > 0)
+				{
+					ps.print(" & ");
+				}
+				ps.print("G (ob_" + id + " |  X (ob_" + id + " | X (ob_" + id + ")))");
 				i++;
 			}
 			ps.println(";");

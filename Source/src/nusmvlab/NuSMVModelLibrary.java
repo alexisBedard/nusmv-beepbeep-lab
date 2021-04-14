@@ -94,6 +94,19 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 */
 	public static final transient String Q_COMPARE_WINDOW_SUM_3 = "Window sum of k comparison";
 	
+	/**
+	 * The name of query "Window sum of k comparison"
+	 */
+	public static final transient String Q_COMPARE_PASSTHROUGH_DELAY = "Passthrough vs delay comparison";
+	
+	/**
+	 * A cache of pipelines already generated. When requested another time,
+	 * the chain is fetched from this map instead of being regenerated. The issue
+	 * here is not performance, but rather that every time the chain is created,
+	 * its processors are given different unique IDs; this could create a
+	 * mismatch between NuSMV variables for the chain, and those that occur in
+	 * the CTL/LTL formulas (which are generated in a later step).
+	 */
 	protected transient Map<ModelId,Processor> m_cache;
 
 	/**

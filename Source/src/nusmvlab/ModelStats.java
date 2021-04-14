@@ -27,9 +27,7 @@ import ca.uqac.lif.labpal.Experiment;
 import ca.uqac.lif.labpal.Laboratory;
 import ca.uqac.lif.labpal.macro.MacroMap;
 
-import static nusmvlab.BeepBeepModelProvider.K;
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
-import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
 
 /**
