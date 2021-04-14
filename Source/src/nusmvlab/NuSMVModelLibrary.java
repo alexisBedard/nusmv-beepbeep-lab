@@ -18,6 +18,7 @@
 package nusmvlab;
 
 import ca.uqac.lif.cep.Connector;
+import ca.uqac.lif.cep.GroupProcessor;
 import ca.uqac.lif.cep.Processor;
 import ca.uqac.lif.cep.functions.ApplyFunction;
 import ca.uqac.lif.cep.functions.Cumulate;
@@ -27,7 +28,9 @@ import ca.uqac.lif.cep.tmf.CountDecimate;
 import ca.uqac.lif.cep.tmf.Filter;
 import ca.uqac.lif.cep.tmf.Fork;
 import ca.uqac.lif.cep.tmf.Passthrough;
+import ca.uqac.lif.cep.tmf.Trim;
 import ca.uqac.lif.cep.tmf.Window;
+import ca.uqac.lif.cep.util.Equals;
 import ca.uqac.lif.cep.util.Numbers;
 import ca.uqac.lif.labpal.Region;
 
@@ -86,6 +89,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 */
 	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
 	
+	/**
+	 * The name of query "Window sum of k comparison"
+	 */
+	public static final transient String Q_COMPARE_WINDOW_SUM_3 = "Window sum of k comparison";
+	
 	protected transient Map<ModelId,Processor> m_cache;
 
 	/**
@@ -105,7 +113,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	{
 		return new String[] {Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_WIN_SUM_OF_1,
 				Q_SUM_OF_DOUBLES, Q_PRODUCT, Q_PRODUCT_1_K,
-				Q_OUTPUT_IF_SMALLER_K};
+				Q_OUTPUT_IF_SMALLER_K, Q_COMPARE_WINDOW_SUM_3};
 	}
 
 	@Override
@@ -228,6 +236,41 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(turn_k, 0, gt, 0);
 			Connector.connect(sum, 0, gt, 1);
 			Connector.connect(gt, 0, filter, 1);
+			return f;
+		}
+		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
+		{
+			GroupProcessor g1 = new GroupProcessor(1, 1);
+			{
+				Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+				Window win = new Window(sum, 3);
+				g1.addProcessor(win);
+				g1.associateInput(0, win, 0);
+				g1.associateOutput(0, win, 0);
+			}
+			GroupProcessor g2 = new GroupProcessor(1, 1);
+			{
+				Fork f = new Fork(3);
+				Trim trim1 = new Trim(1);
+				ApplyFunction add1 = new ApplyFunction(Numbers.addition);
+				Connector.connect(f, 0, add1, 0);
+				Connector.connect(f, 1, trim1, 0);
+				Connector.connect(trim1, 0, add1, 1);
+				Trim trim2 = new Trim(2);
+				ApplyFunction add2 = new ApplyFunction(Numbers.addition);
+				Connector.connect(f, 2, trim2, 0);
+				Connector.connect(add1, 0, add2, 0);
+				Connector.connect(trim2, 0, add2, 1);
+				g2.addProcessors(f, trim1, add1, trim2, add2);
+				g2.associateInput(0, f, 0);
+				g2.associateOutput(0, add2, 0);
+			}
+			Fork f = new Fork();
+			Connector.connect(f, 0, g1, 0);
+			Connector.connect(f, 1, g2, 0);
+			ApplyFunction equals = new ApplyFunction(Equals.instance);
+			Connector.connect(g1, 0, equals, 0);
+			Connector.connect(g2, 0, equals, 1);
 			return f;
 		}
 		return null;

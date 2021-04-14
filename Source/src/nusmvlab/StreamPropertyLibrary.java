@@ -171,6 +171,44 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	}
 	
 	/**
+	 * Stipulates that the output of a processor chain is always the Boolean
+	 * value <tt>true</tt>.
+	 */
+	protected static class OutputAlwaysTrue extends CTLPropertyProvider
+	{
+		/**
+		 * The name of query "Output always true"
+		 */
+		public static final transient String NAME = "Output always true";
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected Set<Integer> m_pipeIds;
+		
+		public OutputAlwaysTrue(Set<Integer> pipe_ids)
+		{
+			super(NAME);
+			m_pipeIds = pipe_ids;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			int i = 0;
+			for (int id : m_pipeIds)
+			{
+				if (i > 0)
+				{
+					ps.print(" & ");
+				}
+				ps.print("AG (ob_" + id + " -> oc_" + id + ");");
+			}
+			
+		}
+	}
+	
+	/**
 	 * Stipulates that no queue in a processor chain should be full. A queue
 	 * is considered full when the Boolean variable corresponding to its last
 	 * position takes the value true. Given a list of such variables, the

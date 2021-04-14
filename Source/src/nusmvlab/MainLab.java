@@ -95,6 +95,11 @@ public class MainLab extends Laboratory
 				setupK(q_r, g);
 			}
 		}
+		
+		// Punctual experiments
+		{
+			// TODO
+		}
 
 		// Stats
 		add(new LabStats(this));
