@@ -65,8 +65,10 @@ public class MainLab extends Laboratory
 
 		// Impact of queue size and domain size on all processor chains
 		{
-			Group g = new Group("Impact of queue size and domain size");
-			add(g);
+			Group g_q = new Group("Impact of queue size");
+			add(g_q);
+			Group g_d = new Group("Impact of domain size");
+			add(g_d);
 			Region r = new Region();
 			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
@@ -74,7 +76,7 @@ public class MainLab extends Laboratory
 			r.addRange(QUEUE_SIZE, 1, 4, 1);
 			for (Region q_r : r.all(QUERY))
 			{
-				setupQueueDomain(q_r, g);
+				setupQueueDomain(q_r, g_q, g_d);
 			}
 		}
 
@@ -106,16 +108,20 @@ public class MainLab extends Laboratory
 	 * size.
 	 * @param r A region that specifies a unique query, a list of properties,
 	 * and a range of values for queue size and domain size
-	 * @param g If not null, the group to which the experiments are to be added
+	 * @param g_q If not null, the group to which the queue experiments are
+	 * to be added
+	 * @param g_d If not null, the group to which the domain experiments are
+	 * to be added
 	 */
-	protected void setupQueueDomain(Region r, Group g)
+	protected void setupQueueDomain(Region r, Group g_q, Group g_d)
 	{
 		String query = r.getString(QUERY);
 		{
 			// Varying queue size
 			String latex_query = LatexNamer.latexify(query);
 			boolean added = false;
-			for (Region t_r : r.all(DOMAIN_SIZE))
+			Region d_r = r.set(DOMAIN_SIZE, 4);
+			for (Region t_r : d_r.all(DOMAIN_SIZE))
 			{
 				String latex_params = LatexNamer.latexify("D" + t_r.getInt(DOMAIN_SIZE));
 				ExperimentTable et_time = new ExperimentTable(PROPERTY, QUEUE_SIZE, TIME);
@@ -134,9 +140,9 @@ public class MainLab extends Laboratory
 					added = true;
 					et_time.add(e);
 					et_mem.add(e);
-					if (g != null)
+					if (g_q != null)
 					{
-						g.add(e);
+						g_q.add(e);
 					}
 				}
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
@@ -163,7 +169,8 @@ public class MainLab extends Laboratory
 		{
 			// Varying domain size
 			String latex_query = LatexNamer.latexify(query);
-			for (Region t_r : r.all(QUEUE_SIZE))
+			Region q_r = r.set(QUEUE_SIZE, 3);
+			for (Region t_r : q_r.all(QUEUE_SIZE))
 			{
 				boolean added = false;
 				String latex_params = LatexNamer.latexify("Q" + t_r.getInt(QUEUE_SIZE));
@@ -183,9 +190,9 @@ public class MainLab extends Laboratory
 					added = true;
 					et_time.add(e);
 					et_mem.add(e);
-					if (g != null)
+					if (g_d != null)
 					{
-						g.add(e);
+						g_d.add(e);
 					}
 				}
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);

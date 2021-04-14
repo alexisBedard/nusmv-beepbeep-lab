@@ -1,1 +1,0 @@
-go; check_property; print_bdd_stats; quit;

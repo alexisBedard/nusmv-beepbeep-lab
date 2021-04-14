@@ -65,6 +65,20 @@ public class NuSMVExperiment extends Experiment
 	 * The name of attribute "Witness length".
 	 */
 	public static final transient String WITNESS_LENGTH = "Witness length";
+	
+	/**
+	 * The name of attribute "Reachable states".
+	 */
+	public static final transient String REACHABLE_STATES = "Reachable states";
+	
+	/**
+	 * The name of attribute "Total states".
+	 */
+	public static final transient String TOTAL_STATES = "Total states";
+	/**
+	 * The name of attribute "System diameter".
+	 */
+	public static final transient String SYSTEM_DIAMETER = "System diameter";
 
 	/**
 	 * The command to call to run NuSMV from the command line.
@@ -100,6 +114,21 @@ public class NuSMVExperiment extends Experiment
 	 * The regex pattern to identify states of a counter-example trace
 	 */
 	protected static final transient Pattern s_witnessPattern = Pattern.compile("State: (\\d+)\\.(\\d+)");
+	
+	/**
+	 * The regex pattern to identify system diameter
+	 */
+	protected static final transient Pattern s_diameterPattern = Pattern.compile("system diameter: (\\d+)");
+	
+	/**
+	 * The regex pattern to identify system diameter
+	 */
+	protected static final transient Pattern s_reachableStatesPattern = Pattern.compile("reachable states: .*?\\^([\\d\\.]+)");
+	
+	/**
+	 * The regex pattern to identify system diameter
+	 */
+	protected static final transient Pattern s_totalStatesPattern = Pattern.compile("out of .*?\\^([\\d\\.]+)");
 
 	/**
 	 * An object that provides a NuSMV model to the experiment.
@@ -124,6 +153,9 @@ public class NuSMVExperiment extends Experiment
 		describe(LIVE_NODES, "Peak number of live BDD nodes");
 		describe(VERDICT, "The verdict calculated by NuSMV on the evaluation of the property");
 		describe(WITNESS_LENGTH, "The length of the counter-example trace if one is provided");
+		describe(REACHABLE_STATES, "The base-2 logarithm of the number of reachable states in the NuSMV model");
+		describe(TOTAL_STATES, "The base-2 logarithm of the total number of states in the NuSMV model");
+		describe(SYSTEM_DIAMETER, "The system diameter of the NuSMV model");
 		m_modelProvider = model;
 		m_propertyProvider = property;
 		m_modelProvider.fillExperiment(this);
@@ -147,9 +179,12 @@ public class NuSMVExperiment extends Experiment
 		}
 		String model = baos.toString();
 		long start_time = System.currentTimeMillis();
-		runNuSMV(model);
+		String output = runNuSMV(model, getSourceCheckFilename());
 		long end_time = System.currentTimeMillis();
+		parseCheckResults(output);
 		write(TIME, end_time - start_time);
+		output = runNuSMV(model, getSourceStatsFilename());
+		parseStatsResults(output);
 	}
 
 	/**
@@ -177,12 +212,13 @@ public class NuSMVExperiment extends Experiment
 	 * file, after which NuSMV is called and its output is parsed to extract some
 	 * data about its execution.
 	 * @param model The model to process with NuSMV
+	 * @param source_filename
 	 * @throws ExperimentException Thrown if the call to NuSMV did not succeed
 	 * for some reason
 	 */
-	protected void runNuSMV(String model) throws ExperimentException
+	protected String runNuSMV(String model, String source_filename) throws ExperimentException
 	{
-		CommandRunner runner = getRunner(false, model);
+		CommandRunner runner = getRunner(false, model, source_filename);
 		runner.run();
 		byte[] bytes = runner.getBytes();
 		if (bytes == null)
@@ -195,19 +231,17 @@ public class NuSMVExperiment extends Experiment
 		{
 			throw new ExperimentException("NuSMV existed with code " + outcode);
 		}
-		parseResults(output);
+		return output;
 	}
 	
 	/**
-	 * Parses the results output by NuSMV and fills experiment parameters.
+	 * Parses the results output by NuSMV and fills experiment parameters,
+	 * for the property checking part.
 	 * @param output The string containing the standard output as written to by
 	 * NuSMV
 	 */
-	protected void parseResults(String output)
+	protected void parseCheckResults(String output)
 	{
-		write(MEMORY, readIntFromOutput(output, s_memoryPattern));
-		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
-		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
 		if (output.contains("is false"))
 		{
 			write(VERDICT, "False");
@@ -224,6 +258,22 @@ public class NuSMVExperiment extends Experiment
 		}
 		write(WITNESS_LENGTH, w_len);
 	}
+	
+	/**
+	 * Parses the results output by NuSMV and fills experiment parameters,
+	 * for the stats gathering part.
+	 * @param output The string containing the standard output as written to by
+	 * NuSMV
+	 */
+	protected void parseStatsResults(String output)
+	{
+		write(MEMORY, readIntFromOutput(output, s_memoryPattern));
+		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
+		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
+		write(SYSTEM_DIAMETER, readIntFromOutput(output, s_diameterPattern));
+		write(TOTAL_STATES, readFloatFromOutput(output, s_totalStatesPattern));
+		write(REACHABLE_STATES, readFloatFromOutput(output, s_reachableStatesPattern));
+	}
 
 	/**
 	 * Extracts an integer number from a regex expression.
@@ -239,6 +289,22 @@ public class NuSMVExperiment extends Experiment
 			return -1;
 		}
 		return Integer.parseInt(mat.group(1));
+	}
+	
+	/**
+	 * Extracts a float from a regex expression.
+	 * @param output The string where to apply the regex
+	 * @param pat The pattern to look for
+	 * @return The float parsed from the pattern
+	 */
+	protected float readFloatFromOutput(String output, Pattern pat)
+	{
+		Matcher mat = pat.matcher(output);
+		if (!mat.find())
+		{
+			return -1;
+		}
+		return Float.parseFloat(mat.group(1));
 	}
 
 	/**
@@ -290,19 +356,20 @@ public class NuSMVExperiment extends Experiment
 	 * read a model from stdin despite what its documentation says, so it is
 	 * advisable to call this method using <tt>false</tt>.
 	 * @param model The model to send to NuSMV
+	 * @param source_filename The source filename to provide to NuSMV
 	 * @return An instance of the command runner, ready to be executed
 	 */
-	protected CommandRunner getRunner(boolean use_stdin, String model)
+	protected CommandRunner getRunner(boolean use_stdin, String model, String source_filename)
 	{
 		if (use_stdin)
 		{
-			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename()}, model);
+			return new CommandRunner(new String[] {NUSMV_PATH, "-source", source_filename}, model);
 		}
 		else
 		{
 			String model_filename = TMP_DIR + FILE_SEPARATOR + "model.smv";
 			FileHelper.writeFromString(new File(model_filename), model);
-			return new CommandRunner(new String[] {NUSMV_PATH, "-source", getSourceFilename(), model_filename});
+			return new CommandRunner(new String[] {NUSMV_PATH, "-source", source_filename, model_filename});
 		}
 	}
 	
@@ -327,38 +394,50 @@ public class NuSMVExperiment extends Experiment
 	@Override
 	public boolean prerequisitesFulfilled()
 	{
-		return FileHelper.fileExists(getSourceFilename());
+		return FileHelper.fileExists(getSourceCheckFilename()) && 
+				FileHelper.fileExists(getSourceStatsFilename());
 	}
 
 	@Override
 	public void fulfillPrerequisites()
 	{
-		writeSourceFile();
+		writeSourceFiles();
 	}
 
 	@Override
 	public void cleanPrerequisites()
 	{
-		FileHelper.deleteFile(getSourceFilename());
+		FileHelper.deleteFile(getSourceCheckFilename());
 	}
 
 	/**
 	 * Gets the name of the "source" file containing the batch of commands that
-	 * NuSMV should run on the input model.
+	 * NuSMV should run on the input model for the checking step.
 	 * @return The absolute path of the source file
 	 */
-	/*@ non_null @*/ protected static String getSourceFilename()
+	/*@ non_null @*/ protected static String getSourceCheckFilename()
 	{
-		return TMP_DIR + FILE_SEPARATOR + "commands.smv";
+		return TMP_DIR + FILE_SEPARATOR + "check.smv";
+	}
+	
+	/**
+	 * Gets the name of the "source" file containing the batch of commands that
+	 * NuSMV should run on the input model for the stats gathering step.
+	 * @return The absolute path of the source file
+	 */
+	/*@ non_null @*/ protected static String getSourceStatsFilename()
+	{
+		return TMP_DIR + FILE_SEPARATOR + "stats.smv";
 	}
 
 	/**
-	 * Writes a "source" file containing the batch of commands that NuSMV
-	 * should run on the input model. This file will be the same for all
+	 * Writes the "source" files containing the batch of commands that NuSMV
+	 * should run on the input model. These files will be the same for all
 	 * models sent to the model checker.
 	 */
-	protected void writeSourceFile()
+	protected void writeSourceFiles()
 	{
-		FileHelper.writeFromString(new File(getSourceFilename()), "go; check_property; print_bdd_stats; quit;");
+		FileHelper.writeFromString(new File(getSourceCheckFilename()), "go; check_property; quit;");
+		FileHelper.writeFromString(new File(getSourceStatsFilename()), "go; print_bdd_stats; print_reachable_states; quit;");
 	}
 }
