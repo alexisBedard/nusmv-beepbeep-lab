@@ -276,6 +276,7 @@ public class MainLab extends Laboratory
 	{
 		callbacks.add(new ModelPageCallback(this));
 		callbacks.add(new InnerFileCallback(this));
+		callbacks.add(new AllQueriesCallback(this));
 	}
 
 	public static void main(String[] args)

@@ -96,6 +96,17 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		super();
 		m_cache = new HashMap<ModelId,Processor>();
 	}
+	
+	/**
+	 * Gets the names of all queries handled by this model provider.
+	 * @return The names of all queries
+	 */
+	public static String[] getQueryNames()
+	{
+		return new String[] {Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_WIN_SUM_OF_1,
+				Q_SUM_OF_DOUBLES, Q_PRODUCT, Q_PRODUCT_1_K,
+				Q_OUTPUT_IF_SMALLER_K};
+	}
 
 	@Override
 	public ModelProvider get(Region r)
