@@ -73,6 +73,14 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		{
 			return new OutputAlwaysEven(b_model.getOutputPipeIds());
 		}
+		if (name.compareTo(OutputAlwaysTrue.NAME) == 0)
+		{
+			return new OutputAlwaysTrue(b_model.getOutputPipeIds());
+		}
+		if (name.compareTo(OutputsAlwaysEqual.NAME) == 0)
+		{
+			return new OutputsAlwaysEqual(b_model.getOutputPipeIds());
+		}
 		if (name.compareTo(NoFullQueues.NAME) == 0)
 		{
 			return new NoFullQueues(b_model.getQueueVariables());
@@ -80,13 +88,20 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		return null;
 	}
 	
+	/**
+	 * Stipulates that a state variable x, when it reaches 0, remains at 0
+	 * forever.
+	 */
 	protected static class XStaysNull extends CTLPropertyProvider
 	{
 		/**
-		 * The name of query "x stays nul"
+		 * The name of query "x stays null"
 		 */
 		public static final transient String NAME = "x stays null";
 		
+		/**
+		 * Creates a new instance of the property.
+		 */
 		public XStaysNull()
 		{
 			super(NAME);
@@ -95,7 +110,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		@Override
 		public void printToFile(PrintStream ps)
 		{
-			ps.println("  AG (x = 0 -> AG (x = 0));");
+			ps.println("AG (x = 0 -> AG (x = 0));");
 		}
 	}
 	
@@ -114,6 +129,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		protected Set<Integer> m_pipeIds;
 		
+		/**
+		 * Creates a new instance of the property.
+		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * the processor chain
+		 */
 		public Liveness(Set<Integer> pipe_ids)
 		{
 			super(NAME);
@@ -152,6 +172,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		protected Set<Integer> m_pipeIds;
 		
+		/**
+		 * Creates a new instance of the property.
+		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * the processor chain
+		 */
 		public BoundedLiveness(Set<Integer> pipe_ids)
 		{
 			super(NAME);
@@ -190,6 +215,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		protected Set<Integer> m_pipeIds;
 		
+		/**
+		 * Creates a new instance of the property.
+		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * the processor chain
+		 */
 		public OutputAlwaysEven(Set<Integer> pipe_ids)
 		{
 			super(NAME);
@@ -206,9 +236,69 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("AG (ob_" + id + " -> (oc_" + id + " mod 2) = 0));");
+				ps.print("(AG (ob_" + id + " -> (oc_" + id + " mod 2) = 0)))");
+				i++;
 			}
-			
+			ps.println(";");
+		}
+	}
+	
+	/**
+	 * Stipulates that all the outputs of a processor chain produce the same
+	 * values at the same time.
+	 */
+	protected static class OutputsAlwaysEqual extends CTLPropertyProvider
+	{
+		/**
+		 * The name of query "Outputs always equal"
+		 */
+		public static final transient String NAME = "Outputs always equal";
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected Set<Integer> m_pipeIds;
+		
+		/**
+		 * Creates a new instance of the property.
+		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * the processor chain
+		 */
+		public OutputsAlwaysEqual(Set<Integer> pipe_ids)
+		{
+			super(NAME);
+			m_pipeIds = pipe_ids;
+		}
+
+		@Override
+		public void printToFile(PrintStream ps)
+		{
+			if (m_pipeIds.size() < 2)
+			{
+				// You need at least two outputs to state that they are equal
+				ps.print("TRUE;");
+				return;
+			}
+			ps.print("AG (");
+			int i = 0;
+			for (int id1 : m_pipeIds)
+			{
+				for (int id2 : m_pipeIds)
+				{
+					if (id2 <= id1)
+					{
+						continue;
+					}
+					if (i > 0)
+					{
+						ps.print(" & ");
+					}
+					ps.print("(ob_" + id1 + " = ob_" + id2 + " & (ob_" + id1 + " -> (oc_" + id1 + " = oc_" + id2 + ")))");
+					i++;
+				}
+				i++;
+			}
+			ps.println(");");
 		}
 	}
 	
@@ -228,6 +318,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 */
 		protected Set<Integer> m_pipeIds;
 		
+		/**
+		 * Creates a new instance of the property.
+		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * the processor chain
+		 */
 		public OutputAlwaysTrue(Set<Integer> pipe_ids)
 		{
 			super(NAME);
@@ -244,9 +339,10 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("AG (ob_" + id + " -> oc_" + id + ");");
+				ps.print("(AG (ob_" + id + " -> oc_" + id + "))");
+				i++;
 			}
-			
+			ps.println(";");
 		}
 	}
 	
@@ -301,7 +397,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		{
 			if (m_queueVars.length == 0)
 			{
-				ps.print("TRUE");
+				ps.print("TRUE;");
 				return;
 			}
 			ps.print("! (EF (");

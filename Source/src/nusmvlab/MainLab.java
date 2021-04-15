@@ -32,6 +32,7 @@ import nusmvlab.StreamPropertyLibrary.BoundedLiveness;
 import nusmvlab.StreamPropertyLibrary.Liveness;
 import nusmvlab.StreamPropertyLibrary.NoFullQueues;
 import nusmvlab.StreamPropertyLibrary.OutputAlwaysTrue;
+import nusmvlab.StreamPropertyLibrary.OutputsAlwaysEqual;
 
 import static nusmvlab.BeepBeepModelProvider.K;
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
@@ -39,6 +40,7 @@ import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.NuSMVExperiment.MEMORY;
 import static nusmvlab.NuSMVExperiment.TIME;
+import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_WINDOW_SUM_2;
 import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_WINDOW_SUM_3;
 import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_PASSTHROUGH_DELAY;
 import static nusmvlab.NuSMVModelLibrary.Q_OUTPUT_IF_SMALLER_K;
@@ -100,7 +102,7 @@ public class MainLab extends Laboratory
 				setupK(q_r, g);
 			}
 		}
-		
+
 		// Comparison of processor chains on all properties, for a fixed queue size and domain size
 		{
 			Group g = new Group("Impact of query");
@@ -115,7 +117,8 @@ public class MainLab extends Laboratory
 			et_time.setShowInList(false);
 			add(et_time);
 			TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
-			tt_time.setNickname("tEquivalenceTime");
+			tt_time.setTitle("Running time by processor chain");
+			tt_time.setNickname("tPropertyTime");
 			add(tt_time);
 			ClusteredHistogram ch = new ClusteredHistogram(tt_time);
 			ch.setTitle(tt_time.getTitle());
@@ -131,19 +134,20 @@ public class MainLab extends Laboratory
 				g.add(e);
 			}
 		}
-		
-		// Punctual experiments
-		if (false) {
-			Group g = new Group("Processor equivalence");
-			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream.");
+
+		// Sequence equivalence experiments
+		{
+			Group g = new Group("Sequence equivalence");
+			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>).");
 			add(g);
 			Region r = new Region();
-			r.add(QUERY, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
+			r.add(QUERY, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
 			r.add(PROPERTY, OutputAlwaysTrue.NAME);
 			r.add(QUEUE_SIZE, 2);
-			r.add(DOMAIN_SIZE, 3);
+			r.add(DOMAIN_SIZE, 2);
 			ExperimentTable et = new ExperimentTable(QUERY, TIME);
-			et.setNickname("tEquivalenceTime");
+			et.setTitle("Running time for sequence equivalence");
+			et.setNickname("tSequenceEquivalenceTime");
 			add(et);
 			for (Region q_r : r.all(QUERY))
 			{
@@ -153,6 +157,33 @@ public class MainLab extends Laboratory
 					continue;
 				}
 				et.add(e);
+				g.add(e);
+			}
+		}
+
+		// Sequence equivalence experiments
+		{
+			Group g = new Group("Step-wise equivalence");
+			g.setDescription("These experiments compare two processor pipelines and verify that they always produce the same output at every computation step (what is called <em>step-wise equivalence</em>).");
+			add(g);
+			Region r = new Region();
+			r.add(QUERY, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
+			r.add(PROPERTY, OutputsAlwaysEqual.NAME);
+			r.add(QUEUE_SIZE, 2);
+			r.add(DOMAIN_SIZE, 2);
+			ExperimentTable et = new ExperimentTable(QUERY, TIME);
+			et.setTitle("Running time for step-wise equivalence");
+			et.setNickname("tStepwiseEquivalenceTime");
+			add(et);
+			for (Region q_r : r.all(QUERY))
+			{
+				NuSMVExperiment e = m_factory.get(q_r);
+				if (e == null)
+				{
+					continue;
+				}
+				et.add(e);
+				g.add(e);
 			}
 		}
 

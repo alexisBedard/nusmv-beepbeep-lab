@@ -438,7 +438,7 @@ public class NuSMVExperiment extends Experiment
 	 */
 	protected void writeSourceFiles()
 	{
-		FileHelper.writeFromString(new File(getSourceCheckFilename()), "go; check_property; quit;");
-		FileHelper.writeFromString(new File(getSourceStatsFilename()), "go; print_bdd_stats; print_reachable_states; quit;");
+		FileHelper.writeFromString(new File(getSourceCheckFilename()), "set on_failure_script_quits; go; check_property; quit;");
+		FileHelper.writeFromString(new File(getSourceStatsFilename()), "set on_failure_script_quits; go; print_bdd_stats; print_reachable_states; quit;");
 	}
 }

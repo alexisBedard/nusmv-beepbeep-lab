@@ -33,8 +33,10 @@ import ca.uqac.lif.cep.tmf.Window;
 import ca.uqac.lif.cep.util.Equals;
 import ca.uqac.lif.cep.util.Numbers;
 import ca.uqac.lif.labpal.Region;
+import nusmvlab.StreamPropertyLibrary.OutputAlwaysTrue;
 
 import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
+import static nusmvlab.PropertyProvider.PROPERTY;
 import static nusmvlab.BeepBeepModelProvider.QUERY;
 import static nusmvlab.BeepBeepModelProvider.QUEUE_SIZE;
 
@@ -88,17 +90,22 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Output if smaller than k"
 	 */
 	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
-	
+
 	/**
-	 * The name of query "Window sum of k comparison"
+	 * The name of query "Window sum of 2 comparison"
 	 */
-	public static final transient String Q_COMPARE_WINDOW_SUM_3 = "Window sum of k comparison";
-	
+	public static final transient String Q_COMPARE_WINDOW_SUM_2 = "Window sum of 2 comparison";
+
+	/**
+	 * The name of query "Window sum of 3 comparison"
+	 */
+	public static final transient String Q_COMPARE_WINDOW_SUM_3 = "Window sum of 3 comparison";
+
 	/**
 	 * The name of query "Window sum of k comparison"
 	 */
 	public static final transient String Q_COMPARE_PASSTHROUGH_DELAY = "Passthrough vs delay comparison";
-	
+
 	/**
 	 * A cache of pipelines already generated. When requested another time,
 	 * the chain is fetched from this map instead of being regenerated. The issue
@@ -117,7 +124,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		super();
 		m_cache = new HashMap<ModelId,Processor>();
 	}
-	
+
 	/**
 	 * Gets the names of all queries handled by this model provider.
 	 * @return The names of all queries
@@ -173,6 +180,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	protected static Processor getProcessorChain(Region r, Count c)
 	{
 		String query = r.getString(QUERY);
+		String property = r.getString(PROPERTY);
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
 			return new Passthrough();
@@ -281,9 +289,45 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Fork f = new Fork();
 			Connector.connect(f, 0, g1, 0);
 			Connector.connect(f, 1, g2, 0);
-			ApplyFunction equals = new ApplyFunction(Equals.instance);
-			Connector.connect(g1, 0, equals, 0);
-			Connector.connect(g2, 0, equals, 1);
+			if (property.compareTo(OutputAlwaysTrue.NAME) == 0)
+			{
+				ApplyFunction equals = new ApplyFunction(Equals.instance);
+				Connector.connect(g1, 0, equals, 0);
+				Connector.connect(g2, 0, equals, 1);				
+			}
+			return f;
+		}
+		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
+		{
+			GroupProcessor g1 = new GroupProcessor(1, 1);
+			{
+				Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+				Window win = new Window(sum, 2);
+				g1.addProcessor(win);
+				g1.associateInput(0, win, 0);
+				g1.associateOutput(0, win, 0);
+			}
+			GroupProcessor g2 = new GroupProcessor(1, 1);
+			{
+				Fork f = new Fork();
+				Trim trim1 = new Trim(1);
+				ApplyFunction add1 = new ApplyFunction(Numbers.addition);
+				Connector.connect(f, 0, add1, 0);
+				Connector.connect(f, 1, trim1, 0);
+				Connector.connect(trim1, 0, add1, 1);
+				g2.addProcessors(f, trim1, add1);
+				g2.associateInput(0, f, 0);
+				g2.associateOutput(0, add1, 0);
+			}
+			Fork f = new Fork();
+			Connector.connect(f, 0, g1, 0);
+			Connector.connect(f, 1, g2, 0);
+			if (property.compareTo(OutputAlwaysTrue.NAME) == 0)
+			{
+				ApplyFunction equals = new ApplyFunction(Equals.instance);
+				Connector.connect(g1, 0, equals, 0);
+				Connector.connect(g2, 0, equals, 1);				
+			}
 			return f;
 		}
 		return null;
@@ -324,9 +368,17 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			return "/resource/OutputIfSmallerThan_k.png";
 		}
+		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
+		{
+			return "/resource/CompareWindowSum2.png";
+		}
+		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
+		{
+			return "/resource/CompareWindowSum3.png";
+		}
 		return null;
 	}
-	
+
 	/**
 	 * Ugly hack to pass an integer by reference to a method.
 	 */
