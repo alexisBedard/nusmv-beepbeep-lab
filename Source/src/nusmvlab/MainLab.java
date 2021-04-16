@@ -17,6 +17,9 @@
  */
 package nusmvlab;
 
+import ca.uqac.lif.labpal.CliParser;
+import ca.uqac.lif.labpal.CliParser.Argument;
+import ca.uqac.lif.labpal.CliParser.ArgumentMap;
 import ca.uqac.lif.labpal.Group;
 import ca.uqac.lif.labpal.Laboratory;
 import ca.uqac.lif.labpal.LatexNamer;
@@ -69,6 +72,13 @@ public class MainLab extends Laboratory
 		// Lab metadata
 		setTitle("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
+		
+		// Command line parameters
+		ArgumentMap args = getCliArguments();
+		if (args.hasOption("with-stats"))
+		{
+			m_factory.addStats();			
+		}
 
 		// Impact of queue size and domain size on all processor chains
 		{
@@ -375,6 +385,12 @@ public class MainLab extends Laboratory
 		callbacks.add(new ModelPageCallback(this));
 		callbacks.add(new InnerFileCallback(this));
 		callbacks.add(new AllQueriesCallback(this));
+	}
+	
+	@Override
+	public void setupCli(CliParser parser)
+	{
+		parser.addArgument(new Argument().withLongName("with-stats").withDescription("Gather stats about state space size (takes much longer)"));
 	}
 
 	public static void main(String[] args)

@@ -55,27 +55,27 @@ public class NuSMVExperiment extends Experiment
 	 * The name of attribute "Live BDD nodes".
 	 */
 	public static final transient String LIVE_NODES = "Live BDD nodes";
-	
+
 	/**
 	 * The name of attribute "Verdict".
 	 */
 	public static final transient String VERDICT = "Verdict";
-	
+
 	/**
 	 * The name of attribute "Witness length".
 	 */
 	public static final transient String WITNESS_LENGTH = "Witness length";
-	
+
 	/**
 	 * The name of attribute "Reachable states".
 	 */
 	public static final transient String REACHABLE_STATES = "Reachable states";
-	
+
 	/**
 	 * The name of attribute "Total states".
 	 */
 	public static final transient String TOTAL_STATES = "Total states";
-	
+
 	/**
 	 * The name of attribute "System diameter".
 	 */
@@ -110,22 +110,22 @@ public class NuSMVExperiment extends Experiment
 	 * The regex pattern to read live nodes from NuSMV's output
 	 */
 	protected static final transient Pattern s_liveNodesPattern = Pattern.compile("Peak number of live nodes: (\\d+)");
-	
+
 	/**
 	 * The regex pattern to identify states of a counter-example trace
 	 */
 	protected static final transient Pattern s_witnessPattern = Pattern.compile("State: (\\d+)\\.(\\d+)");
-	
+
 	/**
 	 * The regex pattern to identify system diameter
 	 */
 	protected static final transient Pattern s_diameterPattern = Pattern.compile("system diameter: (\\d+)");
-	
+
 	/**
 	 * The regex pattern to identify system diameter
 	 */
 	protected static final transient Pattern s_reachableStatesPattern = Pattern.compile("reachable states: .*?\\^([\\d\\.]+)");
-	
+
 	/**
 	 * The regex pattern to identify system diameter
 	 */
@@ -142,10 +142,20 @@ public class NuSMVExperiment extends Experiment
 	protected transient PropertyProvider m_propertyProvider;
 
 	/**
+	 * Sets whether experiments should gather extra stats about state space
+	 * size.
+	 */
+	protected boolean m_withStats = false;
+
+	/**
 	 * Creates a new instance of NuSMVExperiment.
 	 * @param model  An object that provides a NuSMV file to the experiment
+	 * @param property An object that provides a CTL or LTL property to
+	 * evaluate on the model
+	 * @param with_stats Set to <tt>true</tt> to make the experiment gather
+	 * extra stats about state space size.
 	 */
-	public NuSMVExperiment(/*@ non_null @*/ ModelProvider model, PropertyProvider property)
+	public NuSMVExperiment(/*@ non_null @*/ ModelProvider model, PropertyProvider property, boolean with_stats)
 	{
 		super();
 		describe(TIME, "The time (in ms) taken to process the NuSMV model");
@@ -161,6 +171,7 @@ public class NuSMVExperiment extends Experiment
 		m_propertyProvider = property;
 		m_modelProvider.fillExperiment(this);
 		m_propertyProvider.fillExperiment(this);
+		m_withStats = with_stats;
 	}
 
 	@Override
@@ -184,8 +195,11 @@ public class NuSMVExperiment extends Experiment
 		long end_time = System.currentTimeMillis();
 		parseCheckResults(output);
 		write(TIME, end_time - start_time);
-		output = runNuSMV(model, getSourceStatsFilename());
-		parseStatsResults(output);
+		if (m_withStats)
+		{
+			output = runNuSMV(model, getSourceStatsFilename());
+			parseStatsResults(output);
+		}
 	}
 
 	/**
@@ -234,7 +248,7 @@ public class NuSMVExperiment extends Experiment
 		}
 		return output;
 	}
-	
+
 	/**
 	 * Parses the results output by NuSMV and fills experiment parameters,
 	 * for the property checking part.
@@ -259,7 +273,7 @@ public class NuSMVExperiment extends Experiment
 		}
 		write(WITNESS_LENGTH, w_len);
 	}
-	
+
 	/**
 	 * Parses the results output by NuSMV and fills experiment parameters,
 	 * for the stats gathering part.
@@ -291,7 +305,7 @@ public class NuSMVExperiment extends Experiment
 		}
 		return Integer.parseInt(mat.group(1));
 	}
-	
+
 	/**
 	 * Extracts a float from a regex expression.
 	 * @param output The string where to apply the regex
@@ -373,7 +387,7 @@ public class NuSMVExperiment extends Experiment
 			return new CommandRunner(new String[] {NUSMV_PATH, "-source", source_filename, model_filename});
 		}
 	}
-	
+
 	/**
 	 * Gets the model provider associated to this experiment.
 	 * @return The model provider
@@ -382,7 +396,7 @@ public class NuSMVExperiment extends Experiment
 	{
 		return m_modelProvider;
 	}
-	
+
 	/**
 	 * Gets the property provider associated to this experiment.
 	 * @return The property provider
@@ -420,7 +434,7 @@ public class NuSMVExperiment extends Experiment
 	{
 		return TMP_DIR + FILE_SEPARATOR + "check.smv";
 	}
-	
+
 	/**
 	 * Gets the name of the "source" file containing the batch of commands that
 	 * NuSMV should run on the input model for the stats gathering step.

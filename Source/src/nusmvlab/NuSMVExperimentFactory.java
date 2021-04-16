@@ -39,16 +39,36 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 	protected transient Library<PropertyProvider> m_propertyLibrary;
 	
 	/**
+	 * Sets whether experiments should gather extra stats about state space
+	 * size.
+	 */
+	protected boolean m_withStats;
+	
+	/**
 	 * Creates a new instance of the factory
 	 * @param lab The lab the experiments will be added to
 	 * @param models A library that provides models based on a region
 	 * @param props A library that provides properties based on a region
+	 * @param with_stats Set to true to make experiments gather extra stats
+	 * about state space size. Activating this option takes much longer than
+	 * simply checking properties.
 	 */
 	public NuSMVExperimentFactory(MainLab lab, Library<ModelProvider> models, Library<PropertyProvider> props)
 	{
 		super(lab, NuSMVExperiment.class);
 		m_modelLibrary = models;
 		m_propertyLibrary = props;
+		m_withStats = false;
+	}
+	
+	/**
+	 * Sets the factory so that experiments gather extra stats about state
+	 * space size. Activating this option takes much longer than simply checking
+	 * properties.
+	 */
+	public void addStats()
+	{
+		m_withStats = true;
 	}
 	
 	@Override
@@ -73,7 +93,7 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 		{
 			return null;
 		}
-		NuSMVExperiment e = new NuSMVExperiment(model, prop);
+		NuSMVExperiment e = new NuSMVExperiment(model, prop, m_withStats);
 		e.write(GENERATION_TIME, end - start);
 		return e;
 	}
