@@ -383,6 +383,7 @@ public class MainLab extends Laboratory
 	public void setupCallbacks(List<WebCallback> callbacks)
 	{
 		callbacks.add(new ModelPageCallback(this));
+		callbacks.add(new ModelDownloadCallback(this));
 		callbacks.add(new InnerFileCallback(this));
 		callbacks.add(new AllQueriesCallback(this));
 	}

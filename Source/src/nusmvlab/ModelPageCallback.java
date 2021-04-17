@@ -58,6 +58,7 @@ public class ModelPageCallback extends TemplatePageCallback
 			try
 			{
 				exp.printModel(ps);
+				contents.append("<p><a href=\"download-model?id=").append(exp_id).append("\">Download model</a></p>\n\n");
 				contents.append("<pre>").append(highlightSMV(baos.toString())).append("</pre>\n");
 			}
 			catch (IOException e)
