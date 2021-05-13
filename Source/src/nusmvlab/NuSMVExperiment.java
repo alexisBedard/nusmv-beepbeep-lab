@@ -244,7 +244,7 @@ public class NuSMVExperiment extends Experiment
 		int outcode = runner.getErrorCode();
 		if (outcode != 0)
 		{
-			throw new ExperimentException("NuSMV existed with code " + outcode);
+			throw new ExperimentException("NuSMV exited with code " + outcode);
 		}
 		return output;
 	}

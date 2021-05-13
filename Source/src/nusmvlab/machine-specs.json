@@ -1,8 +1,8 @@
 {
   "Satchmo" : {
-  	"OS" : "Ubuntu 16.04",
-  	"CPU" : "Intel Xeon quad-core 2.66 GHz",
-  	"RAM": "4 GB"
+  	"OS" : "Ubuntu 18.04",
+  	"CPU" : "Intel Xeon 12-core 3.6 GHz",
+  	"RAM": "64 GB"
   },
   "Kuujjuaq" : {
   	"OS" : "Ubuntu 18.04",

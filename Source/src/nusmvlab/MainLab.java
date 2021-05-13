@@ -51,6 +51,7 @@ import static nusmvlab.NuSMVModelLibrary.Q_PASSTHROUGH;
 import static nusmvlab.NuSMVModelLibrary.Q_PRODUCT_1_K;
 import static nusmvlab.NuSMVModelLibrary.Q_PRODUCT_WINDOW_K;
 import static nusmvlab.NuSMVModelLibrary.Q_SUM_OF_DOUBLES;
+import static nusmvlab.NuSMVModelLibrary.Q_SUM_OF_ODDS;
 import static nusmvlab.NuSMVModelLibrary.Q_WIN_SUM_OF_1;
 import static nusmvlab.PropertyProvider.PROPERTY;
 
@@ -72,13 +73,25 @@ public class MainLab extends Laboratory
 		// Lab metadata
 		setTitle("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
-		
-		// Command line parameters
-		ArgumentMap args = getCliArguments();
-		if (args.hasOption("with-stats"))
+
+		/* Set to true to include experiments performing equivalence and step-wise
+		 * equivalence checking. */
+		boolean include_equivalence = false;
+
+		// Read command line arguments
 		{
-			m_factory.addStats();			
+			ArgumentMap args = getCliArguments();
+			if (args.hasOption("with-stats"))
+			{
+				m_factory.addStats();
+			}
+			if (args.hasOption("with-equivalence"))
+			{
+				include_equivalence = true;
+			}
 		}
+
+		// Command line parameters
 
 		// Impact of queue size and domain size on all processor chains
 		{
@@ -87,13 +100,44 @@ public class MainLab extends Laboratory
 			Group g_d = new Group("Impact of domain size");
 			add(g_d);
 			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
 			r.addRange(DOMAIN_SIZE, 2, 5, 1);
 			r.addRange(QUEUE_SIZE, 1, 4, 1);
 			for (Region q_r : r.all(QUERY))
 			{
 				setupQueueDomain(q_r, g_q, g_d);
+			}
+		}
+
+		// Impact of queue size for the "no full queues" property on all queries
+		{
+			Group g_q = new Group("Impact of queue size for \"no full queues\"");
+			add(g_q);
+			Region r = new Region();
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+			r.add(PROPERTY, NoFullQueues.NAME);
+			r.add(DOMAIN_SIZE, 5);
+			r.addRange(QUEUE_SIZE, 1, 4, 1);
+			ExperimentTable et_q_all = new ExperimentTable(QUEUE_SIZE, QUERY, TIME);
+			add(et_q_all);
+			et_q_all.setShowInList(false);
+			TransformedTable tt_q_all = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et_q_all);
+			tt_q_all.setTitle("Impact of queue size for \"no full queues\"");
+			tt_q_all.setNickname("tImpactQueuesNoFullQueues");
+			add(tt_q_all);
+			Scatterplot plot = new Scatterplot(tt_q_all);
+			plot.setTitle(tt_q_all.getTitle());
+			plot.setNickname("pImpactQueuesNoFullQueues");
+			for (Region q_r : r.all(QUERY, PROPERTY, QUEUE_SIZE, DOMAIN_SIZE))
+			{
+				NuSMVExperiment e = m_factory.get(q_r);
+				if (e == null)
+				{
+					continue;
+				}
+				g_q.add(e);
+				et_q_all.add(e);
 			}
 		}
 
@@ -119,7 +163,7 @@ public class MainLab extends Laboratory
 			g.setDescription("Comparison of processor chains on all properties, for a fixed queue size and domain size");
 			add(g);
 			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME);
 			r.add(DOMAIN_SIZE, 4);
 			r.add(QUEUE_SIZE, 3);
@@ -146,6 +190,7 @@ public class MainLab extends Laboratory
 		}
 
 		// Sequence equivalence experiments
+		if (include_equivalence)
 		{
 			Group g = new Group("Sequence equivalence");
 			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>).");
@@ -171,7 +216,8 @@ public class MainLab extends Laboratory
 			}
 		}
 
-		// Sequence equivalence experiments
+		// Step-wise equivalence experiments
+		if (include_equivalence)
 		{
 			Group g = new Group("Step-wise equivalence");
 			g.setDescription("These experiments compare two processor pipelines and verify that they always produce the same output at every computation step (what is called <em>step-wise equivalence</em>).");
@@ -387,11 +433,12 @@ public class MainLab extends Laboratory
 		callbacks.add(new InnerFileCallback(this));
 		callbacks.add(new AllQueriesCallback(this));
 	}
-	
+
 	@Override
 	public void setupCli(CliParser parser)
 	{
 		parser.addArgument(new Argument().withLongName("with-stats").withDescription("Gather stats about state space size (takes much longer)"));
+		parser.addArgument(new Argument().withLongName("with-equivalence").withDescription("Perform equivalence checking experiments"));
 	}
 
 	public static void main(String[] args)

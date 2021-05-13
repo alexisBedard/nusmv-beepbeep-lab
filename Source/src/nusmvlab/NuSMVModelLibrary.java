@@ -90,6 +90,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Output if smaller than k"
 	 */
 	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
+	
+	/**
+	 * The name of query "Sum of odds"
+	 */
+	public static final transient String Q_SUM_OF_ODDS = "Sum of odds";
 
 	/**
 	 * The name of query "Window sum of 2 comparison"
@@ -132,7 +137,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	public static String[] getQueryNames()
 	{
 		return new String[] {Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_WIN_SUM_OF_1,
-				Q_SUM_OF_DOUBLES, Q_PRODUCT, Q_PRODUCT_1_K,
+				Q_SUM_OF_DOUBLES, Q_PRODUCT, Q_PRODUCT_1_K, Q_SUM_OF_ODDS,
 				Q_OUTPUT_IF_SMALLER_K, Q_COMPARE_WINDOW_SUM_3};
 	}
 
@@ -206,6 +211,29 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			// Window width is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
 			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
+		}
+		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
+		{
+			TurnInto one_1 = new TurnInto(1);
+			Cumulate sum_1 = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+			Connector.connect(one_1, sum_1);
+			Fork f = new Fork(3);
+			Connector.connect(sum_1, f);
+			Trim trim = new Trim(1);
+			Connector.connect(f, 0, trim, 0);
+			ApplyFunction even = new ApplyFunction(Numbers.isEven);
+			Connector.connect(trim, even);
+			TurnInto one_2 = new TurnInto(1);
+			Connector.connect(f, 2, one_2, 0);
+			ApplyFunction add = new ApplyFunction(Numbers.addition);
+			Connector.connect(f, 1, add, 0);
+			Connector.connect(one_2, 0, add, 1);
+			Filter filter = new Filter();
+			Connector.connect(even, 0, filter, 1);
+			Connector.connect(add, 0, filter, 0);
+			Cumulate sum_2 = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
+			Connector.connect(filter, sum_2);
+			return one_1;
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
@@ -355,6 +383,10 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
 			return "/resource/SumOfDoubles.png";
+		}
+		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
+		{
+			return "/resource/SumOfOdds.png";
 		}
 		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
 		{
