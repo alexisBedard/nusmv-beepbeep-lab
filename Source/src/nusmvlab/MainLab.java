@@ -93,6 +93,7 @@ public class MainLab extends Laboratory
 
 		// Command line parameters
 
+		/*
 		// Impact of queue size and domain size on all processor chains
 		{
 			Group g_q = new Group("Impact of queue size");
@@ -188,50 +189,26 @@ public class MainLab extends Laboratory
 				g.add(e);
 			}
 		}
+		*/
 
 		// Sequence equivalence experiments
 		if (include_equivalence)
 		{
-			Group g = new Group("Sequence equivalence");
-			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>).");
+			Group g = new Group("Sequence and step-wise equivalence");
+			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>), or that they produce the same output at every computation step (<em>stepwise equivalence</em>).");
 			add(g);
 			Region r = new Region();
-			r.add(QUERY, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
-			r.add(PROPERTY, OutputAlwaysTrue.NAME);
+			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
+			r.add(PROPERTY, OutputAlwaysTrue.NAME, OutputsAlwaysEqual.NAME);
 			r.add(QUEUE_SIZE, 2);
 			r.add(DOMAIN_SIZE, 2);
-			ExperimentTable et = new ExperimentTable(QUERY, TIME);
-			et.setTitle("Running time for sequence equivalence");
-			et.setNickname("tSequenceEquivalenceTime");
-			add(et);
-			for (Region q_r : r.all(QUERY))
-			{
-				NuSMVExperiment e = m_factory.get(q_r);
-				if (e == null)
-				{
-					continue;
-				}
-				et.add(e);
-				g.add(e);
-			}
-		}
-
-		// Step-wise equivalence experiments
-		if (include_equivalence)
-		{
-			Group g = new Group("Step-wise equivalence");
-			g.setDescription("These experiments compare two processor pipelines and verify that they always produce the same output at every computation step (what is called <em>step-wise equivalence</em>).");
-			add(g);
-			Region r = new Region();
-			r.add(QUERY, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
-			r.add(PROPERTY, OutputsAlwaysEqual.NAME);
-			r.add(QUEUE_SIZE, 2);
-			r.add(DOMAIN_SIZE, 2);
-			ExperimentTable et = new ExperimentTable(QUERY, TIME);
-			et.setTitle("Running time for step-wise equivalence");
-			et.setNickname("tStepwiseEquivalenceTime");
-			add(et);
-			for (Region q_r : r.all(QUERY))
+			ExperimentTable et = new ExperimentTable(QUERY, PROPERTY, TIME);
+			et.setShowInList(false);
+			TransformedTable tt = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et);
+			tt.setTitle("Running time for sequence equivalence");
+			tt.setNickname("tSequenceEquivalenceTime");
+			add(et, tt);
+			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
 				NuSMVExperiment e = m_factory.get(q_r);
 				if (e == null)

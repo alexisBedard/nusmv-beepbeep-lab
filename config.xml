@@ -61,7 +61,7 @@
       <classname>ca.uqac.lif.labpal.Laboratory</classname>
       <bundle>true</bundle>
       <files>
-        <zip>https://github.com/liflab/labpal/releases/download/v2.11.8/labpal-2.11.8.zip</zip>
+        <zip>https://github.com/liflab/labpal/releases/download/v2.11.9a/labpal-2.11.9a.zip</zip>
       </files>
     </dependency>
     <dependency>
@@ -72,8 +72,8 @@
       <classname>ca.uqac.lif.cep.Processor</classname>
       <bundle>true</bundle>
       <files>
-        <!-- When ready, URL to be changed to https://github.com/alexisBedard/beepbeep-3/archive/refs/tags/v0.10.3-nusmv.zip -->
-        <zip>https://github.com/liflab/beepbeep-3/releases/download/v0.10.3-alpha/beepbeep-3-0.10.3-alpha.zip</zip>
+        <!-- When ready, URL to be changed to https://github.com/alexisBedard/beepbeep-3/archive/refs/tags/v0.10.5-nusmv.zip -->
+        <zip>https://github.com/liflab/beepbeep-3/releases/download/v0.10.5-alpha/beepbeep-3-0.10.5-alpha.zip</zip>
       </files>
     </dependency>
   </dependencies>

@@ -1,8 +1,50 @@
 <h2>A benchmark for NuSMV extensions to BeepBeep 3</h2>
 
-<p>Add description here in HTML.</p>
+<p>This lab studies a formalization of event stream processing pipelines as 
+Kripke structures that can be handled by a model checker. More specifically,
+the <a href="https://liflab.github.io/beepbeep-3">BeepBeep</a> event stream
+processing library has been modified in order to export chains of processors
+as input files for the <a href="">NuSMV</a> model checking tool. This makes
+it possible to formally verify properties on these pipelines, and opens the
+way to the use of such pipelines directly within a model checker as an
+extension of its specification language.</p>
+
+<p>The goal of this benchmark is to perform an experimental evaluation of the
+proposed implementation, by measuring the execution time and memory consumption
+of NuXmv on a number of BeepBeep pipelines and for a sample of generic
+properties, with a special focus on the impact of parameters <i>Q</i> (the size
+of the internal queues in each processor) and <i>N</i> (the size of the domain
+for numerical variables).</p>
+
+<p>The data produced by this lab is presented in part in the following research
+article:</p>
+
+<blockquote>
+A. Bédard, S. Hallé. (2021). Model checking of stream processing pipelines.
+Submitted to the <i>21st International Symposium on Temporal Representation and
+Reasoning</i> (TIME), May 2021.
+</blockquote>
+
+<h3>Categories of experiments</h3>
+
+<p>The experiments in the lab are divided in the following categories:</p>
+
+<ul>
+<li>Experiments measuring the impact of Q and N for generic properties
+representing invariants on a pipeline</li>
+<li>Experiments measuring the impact of <i>k</i> for processor pipelines
+involving a sliding window processor of width <i>k</i></li>
+<li>Experiments verifying either <em>sequence equivalence</em> or
+<em>stepwise equivalence</em> between two processor pipelines</li>
+</ul>
+
+<p>For all these experiments, memory consumption (as reported directly by NuSMV
+and running time) are measured. The NuSMV model that is generated can also be
+displayed by clicking on an experiment, and following the link "View the SMV
+model".</p>
 
 <h3>Pipelines included in this benchmark</h3>
 
-<p>The benchmark contains about a dozen of different stream processing, which
-are displayed graphically in <a href="/queries">this page</a>.</p>
+<p>The benchmark contains about a dozen of different stream processing pipelines,
+which are displayed graphically in <a style="text-decoration:underline" href="/queries">this
+page</a>.</p>

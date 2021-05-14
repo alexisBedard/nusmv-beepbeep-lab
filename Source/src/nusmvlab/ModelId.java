@@ -76,7 +76,7 @@ public class ModelId
 			{
 				return false;
 			}
-			if (m_name.contains("comparison") && m_property.compareTo(m.m_property) != 0)
+			if (m_property.contains("equivalence") && m_property.compareTo(m.m_property) != 0)
 			{
 				return false;
 			}

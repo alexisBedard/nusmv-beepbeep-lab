@@ -252,7 +252,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The name of query "Outputs always equal"
 		 */
-		public static final transient String NAME = "Outputs always equal";
+		public static final transient String NAME = "Stepwise equivalence";
 		
 		/**
 		 * The set of IDs corresponding to the outputs of the processor chain.
@@ -311,7 +311,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The name of query "Output always true"
 		 */
-		public static final transient String NAME = "Output always true";
+		public static final transient String NAME = "Sequence equivalence";
 		
 		/**
 		 * The set of IDs corresponding to the outputs of the processor chain.

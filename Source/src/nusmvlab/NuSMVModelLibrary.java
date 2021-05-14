@@ -34,6 +34,7 @@ import ca.uqac.lif.cep.util.Equals;
 import ca.uqac.lif.cep.util.Numbers;
 import ca.uqac.lif.labpal.Region;
 import nusmvlab.StreamPropertyLibrary.OutputAlwaysTrue;
+import nusmvlab.StreamPropertyLibrary.OutputsAlwaysEqual;
 
 import static nusmvlab.BeepBeepModelProvider.DOMAIN_SIZE;
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -138,7 +139,8 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	{
 		return new String[] {Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_WIN_SUM_OF_1,
 				Q_SUM_OF_DOUBLES, Q_PRODUCT, Q_PRODUCT_1_K, Q_SUM_OF_ODDS,
-				Q_OUTPUT_IF_SMALLER_K, Q_COMPARE_WINDOW_SUM_3};
+				Q_OUTPUT_IF_SMALLER_K, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3,
+				Q_COMPARE_PASSTHROUGH_DELAY};
 	}
 
 	@Override
@@ -186,9 +188,17 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	{
 		String query = r.getString(QUERY);
 		String property = r.getString(PROPERTY);
+		boolean is_comparison = property.compareTo(OutputsAlwaysEqual.NAME) == 0 || property.compareTo(OutputAlwaysTrue.NAME) == 0;
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
-			return new Passthrough();
+			if (!is_comparison)
+			{
+				return new Passthrough();
+			}
+			else
+			{
+				return joinGroup(new Passthrough(), new Passthrough(), property);
+			}
 		}
 		if (query.compareTo(Q_PRODUCT) == 0)
 		{
@@ -204,13 +214,21 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(f, 0, mul, 0);
 			Connector.connect(f, 0, dec, 0);
 			Connector.connect(dec, 0, mul, 1);
-			return f;
+			if (!is_comparison)
+			{
+				return f;
+			}
+			return compareWithItself(property, f, mul, dec);
 		}
 		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
 		{
 			// Window width is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
-			return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
+			if (!is_comparison)
+			{
+				return new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
+			}
+			return joinGroup(new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x), new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x), property);
 		}
 		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
 		{
@@ -233,7 +251,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(add, 0, filter, 0);
 			Cumulate sum_2 = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
 			Connector.connect(filter, sum_2);
-			return one_1;
+			if (!is_comparison)
+			{
+				return one_1;
+			}
+			return compareWithItself(property, one_1, sum_2, sum_1, f, trim, even, one_2, add, filter);
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
@@ -250,7 +272,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(two, 0, mul, 1);
 			Cumulate sum = new Cumulate(new CumulativeFunction<Number>(Numbers.addition));
 			Connector.connect(mul, sum);
-			return f;
+			if (!is_comparison)
+			{
+				return f;
+			}
+			return compareWithItself(property, f, sum, mul, two);				
 		}
 		if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
 		{
@@ -261,7 +287,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(one, sum);
 			Window win = new Window(new Cumulate(new CumulativeFunction<Number>(Numbers.multiplication)), c.x);
 			Connector.connect(sum, win);
-			return one;
+			if (!is_comparison)
+			{
+				return one;
+			}
+			return compareWithItself(property, one, win, sum);
 		}
 		if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
 		{
@@ -285,7 +315,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			Connector.connect(turn_k, 0, gt, 0);
 			Connector.connect(sum, 0, gt, 1);
 			Connector.connect(gt, 0, filter, 1);
-			return f;
+			if (!is_comparison)
+			{
+				return f;
+			}
+			return compareWithItself(property, f, filter, turn_k, turn_1, sum, gt);
 		}
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
 		{
@@ -314,16 +348,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				g2.associateInput(0, f, 0);
 				g2.associateOutput(0, add2, 0);
 			}
-			Fork f = new Fork();
-			Connector.connect(f, 0, g1, 0);
-			Connector.connect(f, 1, g2, 0);
-			if (property.compareTo(OutputAlwaysTrue.NAME) == 0)
-			{
-				ApplyFunction equals = new ApplyFunction(Equals.instance);
-				Connector.connect(g1, 0, equals, 0);
-				Connector.connect(g2, 0, equals, 1);				
-			}
-			return f;
+			return joinGroup(g1, g2, property);
 		}
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
 		{
@@ -347,18 +372,71 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				g2.associateInput(0, f, 0);
 				g2.associateOutput(0, add1, 0);
 			}
-			Fork f = new Fork();
-			Connector.connect(f, 0, g1, 0);
-			Connector.connect(f, 1, g2, 0);
-			if (property.compareTo(OutputAlwaysTrue.NAME) == 0)
+			return joinGroup(g1, g2, property);
+		}
+		if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
+		{
+			Passthrough g1 = new Passthrough();
+			GroupProcessor g2 = new GroupProcessor(1, 1);
 			{
-				ApplyFunction equals = new ApplyFunction(Equals.instance);
-				Connector.connect(g1, 0, equals, 0);
-				Connector.connect(g2, 0, equals, 1);				
+				Fork f = new Fork();
+				Trim trim = new Trim(1);
+				Connector.connect(f, 1, trim, 0);
+				TurnInto t = new TurnInto(true);
+				Connector.connect(trim, t);
+				Filter filter = new Filter();
+				Connector.connect(f, 0, filter, 0);
+				Connector.connect(trim, 0, filter, 1);
+				g2.addProcessors(f, trim, t, filter);
+				g2.associateInput(0, f, 0);
+				g2.associateOutput(0, filter, 0);
 			}
-			return f;
+			return joinGroup(g1, g2, property);
 		}
 		return null;
+	}
+	
+	/**
+	 * Joins two group processors.
+	 * @param g1 The first group
+	 * @param g2 The second group
+	 * @param property The property to evaluate; if this property corresponds
+	 * to sequence equivalence, the groups are joined in a processor that
+	 * evaluates equality
+	 * @return The upstream fork that connects to the two groups 
+	 */
+	protected static Processor joinGroup(Processor g1, Processor g2, String property)
+	{
+		Fork f = new Fork();
+		Connector.connect(f, 0, g1, 0);
+		Connector.connect(f, 1, g2, 0);
+		if (property.compareTo(OutputAlwaysTrue.NAME) == 0)
+		{
+			ApplyFunction equals = new ApplyFunction(Equals.instance);
+			Connector.connect(g1, 0, equals, 0);
+			Connector.connect(g2, 0, equals, 1);				
+		}
+		return f;
+	}
+	
+	/**
+	 * Takes a list of connected processors, and sets up a pipeline that
+	 * compares this pipeline with another copy of itself.
+	 * @param property The property to evaluate on the pipeline
+	 * @param start The processor corresponding to the start of the pipeline
+	 * @param end The processor corresponding to the end of the pipeline
+	 * @param contents The other processors in the pipeline, if any
+	 * @return The upstream fork that connects to the two groups
+	 */
+	protected static Processor compareWithItself(String property, Processor start, Processor end, Processor ... contents)
+	{
+		GroupProcessor g1 = new GroupProcessor(1, 1);
+		g1.addProcessors(start, end);
+		g1.addProcessors(contents);
+		g1.associateInput(0, start, 0);
+		g1.associateOutput(0, end, 0);
+		GroupProcessor g2 = (GroupProcessor) g1.duplicate();
+		return joinGroup(g1, g2, property);
 	}
 
 	/**
@@ -407,6 +485,10 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
 		{
 			return "/resource/CompareWindowSum3.png";
+		}
+		if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
+		{
+			return "/resource/ComparePassthroughDelay_k.png";
 		}
 		return null;
 	}
