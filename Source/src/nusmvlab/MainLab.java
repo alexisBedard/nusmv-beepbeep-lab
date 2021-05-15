@@ -93,7 +93,6 @@ public class MainLab extends Laboratory
 
 		// Command line parameters
 
-		/*
 		// Impact of queue size and domain size on all processor chains
 		{
 			Group g_q = new Group("Impact of queue size");
@@ -177,6 +176,7 @@ public class MainLab extends Laboratory
 			add(tt_time);
 			ClusteredHistogram ch = new ClusteredHistogram(tt_time);
 			ch.setTitle(tt_time.getTitle());
+			ch.setNickname("pPropertyTime");
 			add(ch);
 			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
@@ -189,7 +189,6 @@ public class MainLab extends Laboratory
 				g.add(e);
 			}
 		}
-		*/
 
 		// Sequence equivalence experiments
 		if (include_equivalence)
@@ -208,6 +207,10 @@ public class MainLab extends Laboratory
 			tt.setTitle("Running time for sequence equivalence");
 			tt.setNickname("tSequenceEquivalenceTime");
 			add(et, tt);
+			ClusteredHistogram ch = new ClusteredHistogram(tt);
+			ch.setTitle(tt.getTitle());
+			ch.setNickname("pSequenceEquivalenceTime");
+			add(ch);
 			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
 				NuSMVExperiment e = m_factory.get(q_r);
@@ -223,6 +226,7 @@ public class MainLab extends Laboratory
 		// Stats
 		add(new LabStats(this));
 		add(new ModelStats(this));
+		add(new TimeStats(this));
 	}
 
 	/**
