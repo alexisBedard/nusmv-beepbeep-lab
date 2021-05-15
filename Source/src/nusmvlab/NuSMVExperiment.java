@@ -84,7 +84,7 @@ public class NuSMVExperiment extends Experiment
 	/**
 	 * The command to call to run NuSMV from the command line.
 	 */
-	public static final transient String NUSMV_PATH = "NuSMV";
+	public static final transient String NUSMV_PATH = "nuXmv";
 
 	/**
 	 * The name of the OS's temporary directory.
@@ -172,6 +172,14 @@ public class NuSMVExperiment extends Experiment
 		m_modelProvider.fillExperiment(this);
 		m_propertyProvider.fillExperiment(this);
 		m_withStats = with_stats;
+	}
+	
+	/**
+	 * Empty constructor, used only for deserialization of lab data.
+	 */
+	protected NuSMVExperiment()
+	{
+		super();
 	}
 
 	@Override

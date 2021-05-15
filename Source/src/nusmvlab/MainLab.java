@@ -75,8 +75,8 @@ public class MainLab extends Laboratory
 		setAuthor("Alexis Bédard and Sylvain Hallé");
 
 		/* Set to true to include experiments performing equivalence and step-wise
-		 * equivalence checking. */
-		boolean include_equivalence = false;
+		   equivalence checking. */
+		boolean include_equivalence = true;
 
 		// Read command line arguments
 		{
@@ -85,13 +85,7 @@ public class MainLab extends Laboratory
 			{
 				m_factory.addStats();
 			}
-			if (args.hasOption("with-equivalence"))
-			{
-				include_equivalence = true;
-			}
 		}
-
-		// Command line parameters
 
 		// Impact of queue size and domain size on all processor chains
 		{
@@ -419,7 +413,6 @@ public class MainLab extends Laboratory
 	public void setupCli(CliParser parser)
 	{
 		parser.addArgument(new Argument().withLongName("with-stats").withDescription("Gather stats about state space size (takes much longer)"));
-		parser.addArgument(new Argument().withLongName("with-equivalence").withDescription("Perform equivalence checking experiments"));
 	}
 
 	public static void main(String[] args)

@@ -48,3 +48,28 @@ model".</p>
 <p>The benchmark contains about a dozen of different stream processing pipelines,
 which are displayed graphically in <a style="text-decoration:underline" href="/queries">this
 page</a>.</p>
+
+<h3>Properties included in this benchmark</h3>
+
+<p>The CTL/LTL properties that are included in this benchmark are the following.</p>
+
+<dl>
+<dt>No full queues</dt>
+<dd>Asserts that no internal queue of a processor in the pipeline is ever full.</dd>
+
+<dt>Liveness</dt>
+<dd>Asserts that at every step of the execution, the pipeline may output one more
+event in the future.</dd>
+
+<dt>Bounded liveness</dt>
+<dd>Asserts that at every step of the execution, the pipeline must output one more
+event in at most <i>k</i> computation steps.</dd>
+
+<dt>Stepwise equivalence</dt>
+<dd>Given two processor pipelines, asserts that they always output the same
+events at the same time.</dd>
+
+<dt>Sequence equivalence</dt>
+<dd>Given two processor pipelines, asserts that the events at matching
+positions in their output streams are equal.</dd>
+</dl>
