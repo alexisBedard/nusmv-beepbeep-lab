@@ -212,7 +212,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			ApplyFunction mul = new ApplyFunction(Numbers.multiplication);
 			CountDecimate dec = new CountDecimate(c.x);
 			Connector.connect(f, 0, mul, 0);
-			Connector.connect(f, 0, dec, 0);
+			Connector.connect(f, 1, dec, 0);
 			Connector.connect(dec, 0, mul, 1);
 			if (!is_comparison)
 			{
@@ -386,7 +386,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				Connector.connect(trim, t);
 				Filter filter = new Filter();
 				Connector.connect(f, 0, filter, 0);
-				Connector.connect(trim, 0, filter, 1);
+				Connector.connect(t, 0, filter, 1);
 				g2.addProcessors(f, trim, t, filter);
 				g2.associateInput(0, f, 0);
 				g2.associateOutput(0, filter, 0);
