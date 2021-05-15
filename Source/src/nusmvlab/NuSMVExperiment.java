@@ -84,7 +84,7 @@ public class NuSMVExperiment extends Experiment
 	/**
 	 * The command to call to run NuSMV from the command line.
 	 */
-	public static final transient String NUSMV_PATH = "nuXmv";
+	public static transient String NUSMV_PATH = "nuXmv";
 
 	/**
 	 * The name of the OS's temporary directory.

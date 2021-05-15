@@ -85,6 +85,10 @@ public class MainLab extends Laboratory
 			{
 				m_factory.addStats();
 			}
+			if (args.hasOption("use-nusmv"))
+			{
+				NuSMVExperiment.NUSMV_PATH = "NuSMV";
+			}
 		}
 
 		// Impact of queue size and domain size on all processor chains
@@ -413,6 +417,7 @@ public class MainLab extends Laboratory
 	public void setupCli(CliParser parser)
 	{
 		parser.addArgument(new Argument().withLongName("with-stats").withDescription("Gather stats about state space size (takes much longer)"));
+		parser.addArgument(new Argument().withLongName("use-nusmv").withDescription("Call NuSMV instead of nuXmv"));
 	}
 
 	public static void main(String[] args)
