@@ -73,6 +73,7 @@ public class MainLab extends Laboratory
 		// Lab metadata
 		setTitle("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
+		setDoi("10.5281/zenodo.5386462");
 
 		/* Set to true to include experiments performing equivalence and step-wise
 		   equivalence checking. */
