@@ -23,9 +23,9 @@ domain for numerical variables).
 The data produced by this lab is presented in part in the following research
 article:
 
-    A. Bédard, S. Hallé. (2021). Model checking of stream processing pipelines.
-    Submitted to the 21st International Symposium on Temporal Representation
-    and Reasoning (TIME), May 2021.
+- A. Bédard, S. Hallé. (2021). Model checking of stream processing pipelines.
+  *21st International Symposium on Temporal Representation and Reasoning
+  (TIME 2021)*, LIPIcs volume 206, 5:1-5:17. DOI: 10.4230/LIPIcs.TIME.2021.5
 
 Instructions on using this repository
 -------------------------------------
