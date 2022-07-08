@@ -17,7 +17,8 @@
  */
 package nusmvlab;
 
-import ca.uqac.lif.cep.smv.SmvModule.SmvVariable;
+import ca.uqac.lif.nusmv4j.ArrayVariable;
+import ca.uqac.lif.nusmv4j.Variable;
 import ca.uqac.lif.labpal.Region;
 
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -150,7 +151,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("AG (EF ob_" + id + ")");
+				ps.print("AG (EF ob_" + id + "[0])");
 				i++;
 			}
 			ps.println(";");
@@ -193,7 +194,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("G (ob_" + id + " |  X (ob_" + id + " | X (ob_" + id + ")))");
+				ps.print("G (ob_" + id + "[0] |  X (ob_" + id + "[0] | X (ob_" + id + "[0])))");
 				i++;
 			}
 			ps.println(";");
@@ -236,7 +237,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("(AG (ob_" + id + " -> (oc_" + id + " mod 2) = 0)))");
+				ps.print("(AG (ob_" + id + "[0] -> (oc_" + id + "[0] mod 2) = 0)))");
 				i++;
 			}
 			ps.println(";");
@@ -293,7 +294,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 					{
 						ps.print(" & ");
 					}
-					ps.print("(ob_" + id1 + " = ob_" + id2 + " & (ob_" + id1 + " -> (oc_" + id1 + " = oc_" + id2 + ")))");
+					ps.print("(ob_" + id1 + "[0] = ob_" + id2 + "[0] & (ob_" + id1 + "[0] -> (oc_" + id1 + " = oc_" + id2 + "[0])))");
 					i++;
 				}
 				i++;
@@ -339,7 +340,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("(AG (ob_" + id + " -> oc_" + id + "))");
+				ps.print("(AG (ob_" + id + "[0] -> oc_" + id + "[0]))");
 				i++;
 			}
 			ps.println(";");
@@ -363,19 +364,19 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The list of Boolean queue variables that must never be true
 		 */
-		protected SmvVariable[] m_queueVars;
+		protected ArrayVariable[] m_queueVars;
 		
 		/**
 		 * Creates a new instance of the property.
 		 * @param queue_vars The collection of Boolean queue variables that
 		 * must never be true
 		 */
-		public NoFullQueues(Collection<SmvVariable> queue_vars)
+		public NoFullQueues(Collection<ArrayVariable> queue_vars)
 		{
 			super(NAME);
-			m_queueVars = new SmvVariable[queue_vars.size()];
+			m_queueVars = new ArrayVariable[queue_vars.size()];
 			int i = 0;
-			for (SmvVariable v : queue_vars)
+			for (ArrayVariable v : queue_vars)
 			{
 				m_queueVars[i++] = v;
 			}
@@ -386,7 +387,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		 * @param queue_vars The list of Boolean queue variables that
 		 * must never be true
 		 */
-		public NoFullQueues(SmvVariable ... queue_vars)
+		public NoFullQueues(ArrayVariable ... queue_vars)
 		{
 			super(NAME);
 			m_queueVars = queue_vars;
@@ -407,7 +408,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" | ");
 				}
-				ps.print(m_queueVars[i].getName() + "[" + (m_queueVars[i].getSize() - 1) + "]");
+				ps.print(m_queueVars[i].getName() + "[" + (m_queueVars[i].getDimension() - 1) + "]");
 			}
 			ps.println("));");
 		}

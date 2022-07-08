@@ -69,7 +69,7 @@ public class ModelStats extends MacroMap
 				BeepBeepModelProvider bmp = (BeepBeepModelProvider) mp;
 				max_vars = Math.max(max_vars, bmp.countVariables());
 				max_modules = Math.max(max_modules, bmp.getModules().size());
-				int num_procs = CounterCrawler.countAllProcessors(bmp.m_start);
+				int num_procs = bmp.getNumProcessors();
 				min_procs = Math.min(min_procs, num_procs);
 				max_procs = Math.max(max_procs, num_procs);
 				max_queue = Math.max(max_queue, ne.readInt(QUEUE_SIZE));
