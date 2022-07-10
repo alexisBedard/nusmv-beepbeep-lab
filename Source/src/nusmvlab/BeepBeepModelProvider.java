@@ -196,6 +196,37 @@ public class BeepBeepModelProvider extends ModelProvider
 		}
 		return getQueueVariables(m_modules);
 	}
+	
+	/**
+	 * Gets all the variables inside this model that correspond to queue
+	 * flags.
+	 * @return The set of queue variables
+	 */
+	public Set<Integer> getInputPipeIds()
+	{
+		Set<Integer> vars = new HashSet<Integer>();
+		if (m_modules == null)
+		{
+			return new HashSet<Integer>(0);
+		}
+		for (Module m : m_modules)
+		{
+			if (m.getName().compareTo("main") == 0)
+			{
+				for (Variable v : m.getVariables())
+				{
+					String v_name = v.getName();
+					if (v_name.startsWith("inb"))
+					{
+						int id = Integer.parseInt(v_name.substring(4));
+						vars.add(id);
+					}
+				}
+				break;
+			}
+		}
+		return vars;
+	}
 
 	/**
 	 * Gets all the variables inside this model that correspond to queue

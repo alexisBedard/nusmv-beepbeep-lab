@@ -210,7 +210,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			if (!is_comparison)
 			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("o", "oc_0", "ob_0", 1, domain)});
+				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("o", "oc_0", "ob_0", 1, domain)});
 				PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
 				bp.add(pt);
 				bp.setInput(pt, 0, 0);
@@ -219,7 +219,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			}
 			/*else
 			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 				PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
 				bp.add(pt);
 				bp.setInput(pt, 0, 0);
@@ -231,7 +231,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		if (query.compareTo(Q_PRODUCT) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("Product", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("Product", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			CumulateModule prod = new CumulateModule("prod", new NusmvNumbers.Multiplication(domain), Q_in, Q_out);
 			bp.add(prod);
 			bp.setInput(prod, 0, 0);
@@ -242,7 +242,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			// Decimation interval is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
-			BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
 			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
 			CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
@@ -265,7 +265,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			c.x = c.x > 0 ? c.x : 3;
 			if (!is_comparison)
 			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 				CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
 				WindowModule win = new WindowModule("Win", prod, c.x, domain, domain, Q_in, Q_out);
 				bp.add(win);
@@ -274,7 +274,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				return bp;
 			}
 			/*
-			BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
 			WindowModule win = new WindowModule("Win", prod, c.x, domain, domain, Q_in, q_size, Q_out);
 			int out_arity = 1;
@@ -284,7 +284,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfOdds", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfOdds", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			TurnIntoModule one_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
 			CumulateModule sum_1 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
 			bp.connect(one_1, 0, sum_1, 0);
@@ -323,7 +323,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				// This query is only possible if domain contains number 2
 				return null;
 			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfDoubles", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfDoubles", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			ForkModule f = new ForkModule("Fork2", domain, 2, 1);
 			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
 			TurnIntoModule two = new TurnIntoModule("TurnTwo", domain, domain, 2, Q_in, Q_out);
@@ -348,7 +348,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			// Window width is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
-			BeepBeepPipeline bp = new BeepBeepPipeline("WindowSumOfOne", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("WindowSumOfOne", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			TurnIntoModule one = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
 			CumulateModule sum = new CumulateModule("Sum1", new NusmvNumbers.Addition(domain), Q_in, Q_out);
 			bp.connect(one, 0, sum, 0);
@@ -376,7 +376,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				// This query is only possible if domain contains number k
 				return null;
 			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("OutputIfSmallerThanK", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("OutputIfSmallerThanK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			ForkModule f = new ForkModule("Fork3", domain, 3, 1);
 			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
 			bp.connect(f, 0, filter, 0);
@@ -386,9 +386,9 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			bp.connect(f, 2, turn_1, 0);
 			CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
 			bp.connect(turn_1, 0, sum, 0);
-			BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsGreaterOrEqual(domain), Q_in, q_size, Q_out);
-			bp.connect(turn_k, 0, gt, 0);
-			bp.connect(sum, 0, gt, 1);
+			BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsLessOrEqual(domain), Q_in, q_size, Q_out);
+			bp.connect(turn_k, 0, gt, 1);
+			bp.connect(sum, 0, gt, 0);
 			bp.connect(gt, 0, filter, 1);
 			bp.add(f, filter, turn_k, turn_1, sum, gt);
 			bp.setInput(f, 0, 0);
@@ -405,7 +405,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		/*
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumThree", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumThree", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			GroupModule g1 = new GroupModule("Group1", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
 			{
 				int width = 3;
@@ -440,7 +440,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		/*
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumTwo", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumTwo", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			GroupModule g1 = new GroupModule("Group1", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
 			{
 				int width = 3;
@@ -470,7 +470,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		/*
 		if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("ComparePassthroughDelay", new ProcessorQueue[] {new ProcessorQueue("in", "inc", "inb", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+			BeepBeepPipeline bp = new BeepBeepPipeline("ComparePassthroughDelay", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			PassthroughModule g1 = new PassthroughModule("pt", domain, Q_in);
 			GroupModule g2 = new GroupModule("Group2", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
 			{

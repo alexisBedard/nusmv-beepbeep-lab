@@ -18,7 +18,6 @@
 package nusmvlab;
 
 import ca.uqac.lif.nusmv4j.ArrayVariable;
-import ca.uqac.lif.nusmv4j.Variable;
 import ca.uqac.lif.labpal.Region;
 
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -64,11 +63,11 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		BeepBeepModelProvider b_model = (BeepBeepModelProvider) model;
 		if (name.compareTo(Liveness.NAME) == 0)
 		{
-			return new Liveness(b_model.getOutputPipeIds());
+			return new Liveness(b_model.getInputPipeIds(), b_model.getOutputPipeIds());
 		}
 		if (name.compareTo(BoundedLiveness.NAME) == 0)
 		{
-			return new BoundedLiveness(b_model.getOutputPipeIds());
+			return new BoundedLiveness(b_model.getInputPipeIds(), b_model.getOutputPipeIds());
 		}
 		if (name.compareTo(OutputAlwaysEven.NAME) == 0)
 		{
@@ -118,7 +117,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	/**
 	 * Stipulates that a processor chain can always output one more event.
 	 */
-	protected static class Liveness extends CTLPropertyProvider
+	protected static class Liveness extends LTLPropertyProvider
 	{
 		/**
 		 * The name of query "Output always even"
@@ -128,30 +127,49 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The set of IDs corresponding to the outputs of the processor chain.
 		 */
-		protected Set<Integer> m_pipeIds;
+		protected final Set<Integer> m_inputPipeIds;
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected final Set<Integer> m_outputPipeIds;
 		
 		/**
 		 * Creates a new instance of the property.
-		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * @param input_pipe_ids The set of IDs corresponding to the inputs of
+		 * the processor chain
+		 * @param output_pipe_ids The set of IDs corresponding to the outputs of
 		 * the processor chain
 		 */
-		public Liveness(Set<Integer> pipe_ids)
+		public Liveness(Set<Integer> input_pipe_ids, Set<Integer> output_pipe_ids)
 		{
 			super(NAME);
-			m_pipeIds = pipe_ids;
+			m_inputPipeIds = input_pipe_ids;
+			m_outputPipeIds = output_pipe_ids;
 		}
 
 		@Override
 		public void printToFile(PrintStream ps)
 		{
 			int i = 0;
-			for (int id : m_pipeIds)
+			for (int id : m_outputPipeIds)
 			{
 				if (i > 0)
 				{
 					ps.print(" & ");
 				}
-				ps.print("AG (EF ob_" + id + "[0])");
+				int j = 0;
+				ps.print("G ((");
+				for (int in_id : m_inputPipeIds)
+				{
+					if (j > 0)
+					{
+						ps.print(" & ");
+					}
+					ps.print("inb_" + in_id + "[0]");
+					j++;
+				}
+				ps.print(") -> (F ob_" + id + "[0]))");
 				i++;
 			}
 			ps.println(";");
@@ -171,30 +189,47 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 		/**
 		 * The set of IDs corresponding to the outputs of the processor chain.
 		 */
-		protected Set<Integer> m_pipeIds;
+		protected final Set<Integer> m_inputPipeIds;
+		
+		/**
+		 * The set of IDs corresponding to the outputs of the processor chain.
+		 */
+		protected final Set<Integer> m_outputPipeIds;
 		
 		/**
 		 * Creates a new instance of the property.
-		 * @param pipe_ids The set of IDs corresponding to the outputs of
+		 * @param output_pipe_ids The set of IDs corresponding to the outputs of
 		 * the processor chain
 		 */
-		public BoundedLiveness(Set<Integer> pipe_ids)
+		public BoundedLiveness(Set<Integer> input_pipe_ids, Set<Integer> output_pipe_ids)
 		{
 			super(NAME);
-			m_pipeIds = pipe_ids;
+			m_inputPipeIds = input_pipe_ids;
+			m_outputPipeIds = output_pipe_ids;
 		}
 
 		@Override
 		public void printToFile(PrintStream ps)
 		{
 			int i = 0;
-			for (int id : m_pipeIds)
+			for (int id : m_outputPipeIds)
 			{
 				if (i > 0)
 				{
 					ps.print(" & ");
 				}
-				ps.print("G (ob_" + id + "[0] |  X (ob_" + id + "[0] | X (ob_" + id + "[0])))");
+				int j = 0;
+				ps.print("G ((");
+				for (int in_id : m_inputPipeIds)
+				{
+					if (j > 0)
+					{
+						ps.print(" & ");
+					}
+					ps.print("inb_" + in_id + "[0]");
+					j++;
+				}
+				ps.print(") -> (ob_" + id + "[0] |  X (ob_" + id + "[0] | X (ob_" + id + "[0]))))");
 				i++;
 			}
 			ps.println(";");
@@ -354,7 +389,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	 * property stipulates that none of them may become true at any point in
 	 * an execution. 
 	 */
-	protected static class NoFullQueues extends CTLPropertyProvider
+	protected static class NoFullQueues extends LTLPropertyProvider
 	{
 		/**
 		 * The name of query "No full queues"
@@ -401,7 +436,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				ps.print("TRUE;");
 				return;
 			}
-			ps.print("! (EF (");
+			ps.print("! (F (");
 			for (int i = 0; i < m_queueVars.length; i++)
 			{
 				if (i > 0)
