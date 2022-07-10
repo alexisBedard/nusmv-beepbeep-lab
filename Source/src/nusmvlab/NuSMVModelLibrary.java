@@ -96,7 +96,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 * The name of query "Output if smaller than k"
 	 */
 	public static final transient String Q_OUTPUT_IF_SMALLER_K = "Output if smaller than k";
-	
+
 	/**
 	 * The name of query "Sum of odds"
 	 */
@@ -205,6 +205,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		Domain domain = new IntegerRange(0, dom_size);
 		int q_size = r.getInt(QUEUE_SIZE);
 		boolean is_comparison = property.compareTo(OutputsAlwaysEqual.NAME) == 0 || property.compareTo(OutputAlwaysTrue.NAME) == 0;
+		boolean is_stepwise = property.compareTo(OutputsAlwaysEqual.NAME) == 0;
 		int Q_in = 1, Q_out = 1;
 		if (query.compareTo(Q_PASSTHROUGH) == 0)
 		{
@@ -217,17 +218,51 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				bp.setOutput(pt, 0, 0);
 				return bp;
 			}
-			/*else
+			else
 			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
-				bp.add(pt);
-				bp.setInput(pt, 0, 0);
-				bp.setOutput(pt, 0, 0);
-				int out_arity = 1;
-				joinGroup(bp, pt, pt, domain, out_arity, Q_in, q_size, Q_out, property);
+				ProcessorQueue[] out_queues;
+				if (is_stepwise)
+				{
+					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
+				}
+				else
+				{
+					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
+				}
+				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
+				ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
+				bp.add(compare_fork);
+				bp.setInput(compare_fork, 0, 0);
+				ProcessorModule out_1 = null, out_2 = null;
+				{
+					// Copy 1
+					PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
+					bp.add(pt);
+					bp.connect(compare_fork, 0, pt, 0);
+					out_1 = pt;
+				}
+				{
+					// Copy 2
+					PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
+					bp.add(pt);
+					bp.connect(compare_fork, 1, pt, 0);
+					out_2 = pt;
+				}
+				if (!is_stepwise)
+				{
+					BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
+					bp.add(comp_eq);
+					bp.connect(out_1, 0, comp_eq, 0);
+					bp.connect(out_2, 0, comp_eq, 1);
+					bp.setOutput(comp_eq, 0, 0);
+				}
+				else
+				{
+					bp.setOutput(out_1, 0, 0);
+					bp.setOutput(out_2, 0, 1);
+				}
 				return bp;
-			}*/
+			}
 		}
 		if (query.compareTo(Q_PRODUCT) == 0)
 		{
@@ -242,22 +277,75 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		{
 			// Decimation interval is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
-			BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-			CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
-			bp.connect(f, 0, mul, 0);
-			bp.connect(f, 1, dec, 0);
-			bp.connect(dec, 0, mul, 1);
-			bp.add(f, mul, dec);
-			bp.setInput(f, 0, 0);
-			bp.setOutput(mul, 0, 0);
 			if (!is_comparison)
 			{
+				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+				BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+				CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
+				bp.connect(f, 0, mul, 0);
+				bp.connect(f, 1, dec, 0);
+				bp.connect(dec, 0, mul, 1);
+				bp.add(f, mul, dec);
+				bp.setInput(f, 0, 0);
+				bp.setOutput(mul, 0, 0);
 				return bp;
 			}
-			/*compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, f, mul, dec);
-			return bp;*/
+			else
+			{
+				ProcessorQueue[] out_queues;
+				if (is_stepwise)
+				{
+					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
+				}
+				else
+				{
+					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
+				}
+				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
+				ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
+				bp.add(compare_fork);
+				bp.setInput(compare_fork, 0, 0);
+				ProcessorModule out_1 = null, out_2 = null;
+				{
+					// Copy 1
+					ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+					BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+					CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
+					bp.connect(f, 0, mul, 0);
+					bp.connect(f, 1, dec, 0);
+					bp.connect(dec, 0, mul, 1);
+					bp.add(f, mul, dec);
+					bp.connect(compare_fork, 0, f, 0);
+					out_1 = mul;
+				}
+				{
+					// Copy 2
+					ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+					BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+					CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
+					bp.connect(f, 0, mul, 0);
+					bp.connect(f, 1, dec, 0);
+					bp.connect(dec, 0, mul, 1);
+					bp.add(f, mul, dec);
+					bp.connect(compare_fork, 1, f, 0);
+					out_2 = mul;
+				}
+				if (!is_stepwise)
+				{
+					BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
+					bp.add(comp_eq);
+					bp.connect(out_1, 0, comp_eq, 0);
+					bp.connect(out_2, 0, comp_eq, 1);
+					bp.setOutput(comp_eq, 0, 0);
+				}
+				else
+				{
+					bp.setOutput(out_1, 0, 0);
+					bp.setOutput(out_2, 0, 1);
+				}
+				return bp;
+			}
 		}
 		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
 		{
@@ -273,6 +361,10 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				bp.setOutput(win, 0, 0);
 				return bp;
 			}
+			else
+			{
+				return null;
+			}
 			/*
 			BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
 			CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
@@ -280,33 +372,40 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			int out_arity = 1;
 			joinGroup(bp, win, win, domain, out_arity, Q_in, q_size, Q_out, property);
 			return bp;
-			*/
+			 */
 		}
 		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfOdds", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			TurnIntoModule one_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-			CumulateModule sum_1 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-			bp.connect(one_1, 0, sum_1, 0);
-			ForkModule f = new ForkModule("Fork3", domain, 3, 1);
-			bp.connect(sum_1, 0, f, 0);
-			TrimModule trim = new TrimModule("Trim1", 1, domain, 1);
-			bp.connect(f, 0, trim, 0);
-			UnaryApplyFunctionModule even = new UnaryApplyFunctionModule("IsEven", new NusmvNumbers.IsEven(domain), Q_in, Q_out);
-			bp.connect(trim, 0, even, 0);
-			TurnIntoModule one_2 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-			bp.connect(f, 2, one_2, 0);
-			BinaryApplyFunctionModule add = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
-			bp.connect(f, 1, add, 0);
-			bp.connect(one_2, 0, add, 1);
-			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
-			bp.connect(even, 0, filter, 1);
-			bp.connect(add, 0, filter, 0);
-			CumulateModule sum_2 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-			bp.connect(filter, 0, sum_2, 0);
-			bp.add(one_1, sum_1, f, trim, even, one_2, add, filter);
-			bp.setInput(one_1, 0, 0);
-			bp.setOutput(sum_2, 0, 0);
+			if (!is_comparison)
+			{
+				BeepBeepPipeline bp = new BeepBeepPipeline("SumOfOdds", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				TurnIntoModule one_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+				CumulateModule sum_1 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+				bp.connect(one_1, 0, sum_1, 0);
+				ForkModule f = new ForkModule("Fork3", domain, 3, 1);
+				bp.connect(sum_1, 0, f, 0);
+				TrimModule trim = new TrimModule("Trim1", 1, domain, 1);
+				bp.connect(f, 0, trim, 0);
+				UnaryApplyFunctionModule even = new UnaryApplyFunctionModule("IsEven", new NusmvNumbers.IsEven(domain), Q_in, Q_out);
+				bp.connect(trim, 0, even, 0);
+				TurnIntoModule one_2 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+				bp.connect(f, 2, one_2, 0);
+				BinaryApplyFunctionModule add = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
+				bp.connect(f, 1, add, 0);
+				bp.connect(one_2, 0, add, 1);
+				FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
+				bp.connect(even, 0, filter, 1);
+				bp.connect(add, 0, filter, 0);
+				CumulateModule sum_2 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+				bp.connect(filter, 0, sum_2, 0);
+				bp.add(one_1, sum_1, f, trim, even, one_2, add, filter);
+				bp.setInput(one_1, 0, 0);
+				bp.setOutput(sum_2, 0, 0);
+			}
+			else
+			{
+				return null;
+			}
 			/*
 			if (!is_comparison)
 			{
@@ -314,7 +413,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			}
 			compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, f, trim, even, one_2, add, filter);
 			return bp;
-			*/
+			 */
 		}
 		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
 		{
@@ -323,49 +422,49 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				// This query is only possible if domain contains number 2
 				return null;
 			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("SumOfDoubles", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			ForkModule f = new ForkModule("Fork2", domain, 2, 1);
-			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-			TurnIntoModule two = new TurnIntoModule("TurnTwo", domain, domain, 2, Q_in, Q_out);
-			bp.connect(f, 0, mul, 0);
-			bp.connect(f, 0, two, 0);
-			bp.connect(two, 0, mul, 1);
-			CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-			bp.connect(mul, 0, sum, 0);
-			bp.add(f, mul, two, sum);
-			bp.setInput(f, 0, 0);
-			bp.setOutput(sum, 0, 0);
 			if (!is_comparison)
 			{
+				BeepBeepPipeline bp = new BeepBeepPipeline("SumOfDoubles", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				ForkModule f = new ForkModule("Fork2", domain, 2, 1);
+				BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+				TurnIntoModule two = new TurnIntoModule("TurnTwo", domain, domain, 2, Q_in, Q_out);
+				bp.connect(f, 0, mul, 0);
+				bp.connect(f, 0, two, 0);
+				bp.connect(two, 0, mul, 1);
+				CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+				bp.connect(mul, 0, sum, 0);
+				bp.add(f, mul, two, sum);
+				bp.setInput(f, 0, 0);
+				bp.setOutput(sum, 0, 0);
 				return bp;
 			}
-			/*
-			compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, f, sum, mul, two);
-			return bp;
-			*/
+			else 
+			{
+				return null;
+			}
 		}
 		if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
 		{
 			// Window width is 3 if not specified
 			c.x = c.x > 0 ? c.x : 3;
-			BeepBeepPipeline bp = new BeepBeepPipeline("WindowSumOfOne", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			TurnIntoModule one = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-			CumulateModule sum = new CumulateModule("Sum1", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-			bp.connect(one, 0, sum, 0);
-			CumulateModule add = new CumulateModule("Sum2", new NusmvNumbers.Addition(domain), c.x, c.x);
-			WindowModule win = new WindowModule("Win", add, c.x, domain, domain, Q_in, Q_out);
-			bp.connect(sum, 0, win, 0);
-			bp.add(win, sum);
-			bp.setInput(sum, 0, 0);
-			bp.setOutput(win, 0, 0);
 			if (!is_comparison)
 			{
+				BeepBeepPipeline bp = new BeepBeepPipeline("WindowSumOfOne", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				TurnIntoModule one = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+				CumulateModule sum = new CumulateModule("Sum1", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+				bp.connect(one, 0, sum, 0);
+				CumulateModule add = new CumulateModule("Sum2", new NusmvNumbers.Addition(domain), c.x, c.x);
+				WindowModule win = new WindowModule("Win", add, c.x, domain, domain, Q_in, Q_out);
+				bp.connect(sum, 0, win, 0);
+				bp.add(win, sum);
+				bp.setInput(sum, 0, 0);
+				bp.setOutput(win, 0, 0);
 				return bp;
 			}
-			/*
-			compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, one, win, sum);
-			return bp;
-			*/
+			else
+			{
+				return null;
+			}
 		}
 		if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
 		{
@@ -376,31 +475,31 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 				// This query is only possible if domain contains number k
 				return null;
 			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("OutputIfSmallerThanK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			ForkModule f = new ForkModule("Fork3", domain, 3, 1);
-			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
-			bp.connect(f, 0, filter, 0);
-			TurnIntoModule turn_k = new TurnIntoModule("TurnK", domain, domain, c.x, Q_in, Q_out);
-			bp.connect(f, 1, turn_k, 0);
-			TurnIntoModule turn_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-			bp.connect(f, 2, turn_1, 0);
-			CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-			bp.connect(turn_1, 0, sum, 0);
-			BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsLessOrEqual(domain), Q_in, q_size, Q_out);
-			bp.connect(turn_k, 0, gt, 1);
-			bp.connect(sum, 0, gt, 0);
-			bp.connect(gt, 0, filter, 1);
-			bp.add(f, filter, turn_k, turn_1, sum, gt);
-			bp.setInput(f, 0, 0);
-			bp.setOutput(filter, 0, 0);
 			if (!is_comparison)
 			{
+				BeepBeepPipeline bp = new BeepBeepPipeline("OutputIfSmallerThanK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
+				ForkModule f = new ForkModule("Fork3", domain, 3, 1);
+				FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
+				bp.connect(f, 0, filter, 0);
+				TurnIntoModule turn_k = new TurnIntoModule("TurnK", domain, domain, c.x, Q_in, Q_out);
+				bp.connect(f, 1, turn_k, 0);
+				TurnIntoModule turn_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+				bp.connect(f, 2, turn_1, 0);
+				CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+				bp.connect(turn_1, 0, sum, 0);
+				BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsLessOrEqual(domain), Q_in, q_size, Q_out);
+				bp.connect(turn_k, 0, gt, 1);
+				bp.connect(sum, 0, gt, 0);
+				bp.connect(gt, 0, filter, 1);
+				bp.add(f, filter, turn_k, turn_1, sum, gt);
+				bp.setInput(f, 0, 0);
+				bp.setOutput(filter, 0, 0);
 				return bp;
 			}
-			/*
-			compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, f, filter, turn_k, turn_1, sum, gt);
-			return bp;
-			*/
+			else
+			{
+				return null;
+			}
 		}
 		/*
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
@@ -436,7 +535,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			joinGroup(bp, g1, g2, domain, out_arity, Q_in, q_size, Q_out, property);
 			return bp;
 		}
-		*/
+		 */
 		/*
 		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
 		{
@@ -466,7 +565,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			joinGroup(bp, g1, g2, domain, out_arity, Q_in, q_size, Q_out, property);
 			return bp;
 		}
-		*/
+		 */
 		/*
 		if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
 		{
@@ -490,10 +589,10 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			joinGroup(bp, g1, g2, domain, out_arity, Q_in, q_size, Q_out, property);
 			return bp;
 		}
-		*/
+		 */
 		return null;
 	}
-	
+
 	/**
 	 * Joins two group processors.
 	 * @param g1 The first group
@@ -518,7 +617,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		return f;
 	}
-	
+
 	/**
 	 * Takes a list of connected processors, and sets up a pipeline that
 	 * compares this pipeline with another copy of itself.

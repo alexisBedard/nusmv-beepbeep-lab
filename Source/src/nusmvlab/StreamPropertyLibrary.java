@@ -283,7 +283,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	 * Stipulates that all the outputs of a processor chain produce the same
 	 * values at the same time.
 	 */
-	protected static class OutputsAlwaysEqual extends CTLPropertyProvider
+	protected static class OutputsAlwaysEqual extends LTLPropertyProvider
 	{
 		/**
 		 * The name of query "Outputs always equal"
@@ -315,7 +315,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				ps.print("TRUE;");
 				return;
 			}
-			ps.print("AG (");
+			ps.print("G (");
 			int i = 0;
 			for (int id1 : m_pipeIds)
 			{
@@ -329,7 +329,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 					{
 						ps.print(" & ");
 					}
-					ps.print("(ob_" + id1 + "[0] = ob_" + id2 + "[0] & (ob_" + id1 + "[0] -> (oc_" + id1 + " = oc_" + id2 + "[0])))");
+					ps.print("(ob_" + id1 + "[0] = ob_" + id2 + "[0] & (ob_" + id1 + "[0] -> (oc_" + id1 + "[0] = oc_" + id2 + "[0])))");
 					i++;
 				}
 				i++;
@@ -342,7 +342,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	 * Stipulates that the output of a processor chain is always the Boolean
 	 * value <tt>true</tt>.
 	 */
-	protected static class OutputAlwaysTrue extends CTLPropertyProvider
+	protected static class OutputAlwaysTrue extends LTLPropertyProvider
 	{
 		/**
 		 * The name of query "Output always true"
@@ -375,7 +375,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 				{
 					ps.print(" & ");
 				}
-				ps.print("(AG (ob_" + id + "[0] -> oc_" + id + "[0]))");
+				ps.print("(G (ob_" + id + "[0] -> oc_" + id + "[0]))");
 				i++;
 			}
 			ps.println(";");

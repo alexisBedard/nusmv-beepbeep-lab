@@ -77,7 +77,7 @@ public class MainLab extends Laboratory
 
 		/* Set to true to include experiments performing equivalence and step-wise
 		   equivalence checking. */
-		boolean include_equivalence = false;
+		boolean include_equivalence = true;
 
 		// Read command line arguments
 		{
@@ -100,7 +100,6 @@ public class MainLab extends Laboratory
 			add(g_d);
 			Region r = new Region();
 			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			//r.add(QUERY, Q_PRODUCT_1_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
 			r.addRange(DOMAIN_SIZE, 2, 2, 1); // 2, 5, 1
 			r.addRange(QUEUE_SIZE, 1, 2, 1); // 1, 4, 1
@@ -116,7 +115,6 @@ public class MainLab extends Laboratory
 			add(g_q);
 			Region r = new Region();
 			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			//r.add(QUERY, Q_PRODUCT_1_K);
 			r.add(PROPERTY, NoFullQueues.NAME);
 			r.add(DOMAIN_SIZE, 5);
 			r.addRange(QUEUE_SIZE, 1, 2, 1); // 1, 4, 1
@@ -148,7 +146,6 @@ public class MainLab extends Laboratory
 			add(g);
 			Region r = new Region();
 			r.add(QUERY, Q_PRODUCT_WINDOW_K, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			//r.add(QUERY, Q_PRODUCT_1_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
 			r.add(QUEUE_SIZE, 2);
 			r.add(DOMAIN_SIZE, 3);
@@ -166,7 +163,6 @@ public class MainLab extends Laboratory
 			add(g);
 			Region r = new Region();
 			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS);
-			//r.add(QUERY, Q_PRODUCT_1_K);
 			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME);
 			r.add(DOMAIN_SIZE, 4);
 			r.add(QUEUE_SIZE, 2); // 3
@@ -201,7 +197,6 @@ public class MainLab extends Laboratory
 			add(g);
 			Region r = new Region();
 			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
-			//r.add(QUERY, Q_PRODUCT_1_K);
 			r.add(PROPERTY, OutputAlwaysTrue.NAME, OutputsAlwaysEqual.NAME);
 			r.add(QUEUE_SIZE, 2);
 			r.add(DOMAIN_SIZE, 2);
