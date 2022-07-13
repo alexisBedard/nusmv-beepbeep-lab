@@ -146,6 +146,14 @@ public class NuSMVExperiment extends Experiment
 	 * size.
 	 */
 	protected boolean m_withStats = false;
+	
+	/**
+	 * Sets whether NuSMV is asked to first compute reachable states before
+	 * checking a property on a model. Pre-computing the reachable states may
+	 * have a positive impact on performance in the case of sparse state
+	 * spaces.
+	 */
+	protected boolean m_computeReachable = true;
 
 	/**
 	 * Creates a new instance of NuSMVExperiment.
@@ -460,7 +468,7 @@ public class NuSMVExperiment extends Experiment
 	 */
 	protected void writeSourceFiles()
 	{
-		FileHelper.writeFromString(new File(getSourceCheckFilename()), "set on_failure_script_quits; go; check_property; quit;");
+		FileHelper.writeFromString(new File(getSourceCheckFilename()), "set on_failure_script_quits; go; " + (m_computeReachable ? "compute_reachable; " : "") + "check_property; quit;");
 		FileHelper.writeFromString(new File(getSourceStatsFilename()), "set on_failure_script_quits; go; print_bdd_stats; print_reachable_states; quit;");
 	}
 }
