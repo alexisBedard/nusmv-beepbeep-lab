@@ -22,10 +22,8 @@ import ca.uqac.lif.cep.nusmv.BeepBeepPipeline;
 import ca.uqac.lif.cep.nusmv.BinaryApplyFunctionModule;
 import ca.uqac.lif.cep.nusmv.CountDecimateModule;
 import ca.uqac.lif.cep.nusmv.CumulateModule;
-import ca.uqac.lif.cep.nusmv.EqualsFunction;
 import ca.uqac.lif.cep.nusmv.FilterModule;
 import ca.uqac.lif.cep.nusmv.ForkModule;
-import ca.uqac.lif.cep.nusmv.GroupModule;
 import ca.uqac.lif.cep.nusmv.NusmvNumbers;
 import ca.uqac.lif.cep.nusmv.PassthroughModule;
 import ca.uqac.lif.cep.nusmv.ProcessorModule;
@@ -200,7 +198,6 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	 */
 	protected static BeepBeepPipeline getProcessorChain(Region r, Count c)
 	{
-		String query = r.getString(QUERY);
 		String property = r.getString(PROPERTY);
 		int dom_size = r.getInt(DOMAIN_SIZE);
 		Domain domain = new IntegerRange(0, dom_size);
@@ -208,301 +205,23 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		boolean is_comparison = property.compareTo(OutputsAlwaysEqual.NAME) == 0 || property.compareTo(OutputAlwaysTrue.NAME) == 0;
 		boolean is_stepwise = property.compareTo(OutputsAlwaysEqual.NAME) == 0;
 		int Q_in = 1, Q_out = 1;
-		if (query.compareTo(Q_PASSTHROUGH) == 0)
+		PipelineCreatorPair pcp = getPipelineCreators(r, c);
+		if (pcp == null)
 		{
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("Passthrough", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("o", "oc_0", "ob_0", 1, domain)});
-				PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
-				bp.add(pt);
-				bp.setInput(pt, 0, 0);
-				bp.setOutput(pt, 0, 0);
-				return bp;
-			}
-			else
-			{
-				ProcessorQueue[] out_queues;
-				if (is_stepwise)
-				{
-					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
-				}
-				else
-				{
-					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
-				}
-				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
-				ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
-				bp.add(compare_fork);
-				bp.setInput(compare_fork, 0, 0);
-				ProcessorModule out_1 = null, out_2 = null;
-				{
-					// Copy 1
-					PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
-					bp.add(pt);
-					bp.connect(compare_fork, 0, pt, 0);
-					out_1 = pt;
-				}
-				{
-					// Copy 2
-					PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
-					bp.add(pt);
-					bp.connect(compare_fork, 1, pt, 0);
-					out_2 = pt;
-				}
-				if (!is_stepwise)
-				{
-					BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
-					bp.add(comp_eq);
-					bp.connect(out_1, 0, comp_eq, 0);
-					bp.connect(out_2, 0, comp_eq, 1);
-					bp.setOutput(comp_eq, 0, 0);
-				}
-				else
-				{
-					bp.setOutput(out_1, 0, 0);
-					bp.setOutput(out_2, 0, 1);
-				}
-				return bp;
-			}
+			return null;
 		}
-		if (query.compareTo(Q_PRODUCT) == 0)
+		PipelineCreator pc1 = pcp.pc1;
+		PipelineCreator pc2 = pcp.pc2;
+		String pipeline_name = pcp.pipeline_name;
+		if (!is_comparison)
 		{
-			BeepBeepPipeline bp = new BeepBeepPipeline("Product", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			CumulateModule prod = new CumulateModule("prod", new NusmvNumbers.Multiplication(domain), Q_in, Q_out);
-			bp.add(prod);
-			bp.setInput(prod, 0, 0);
-			bp.setOutput(prod, 0, 0);
+			BeepBeepPipeline bp = new BeepBeepPipeline(pipeline_name, new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("o", "oc_0", "ob_0", 1, domain)});
+			ProcessorModule[] ports = pc1.get(bp, domain, Q_in, q_size, Q_out, c);
+			bp.setInput(ports[0], 0, 0);
+			bp.setOutput(ports[1], 0, 0);
 			return bp;
 		}
-		if (query.compareTo(Q_PRODUCT_1_K) == 0)
-		{
-			// Decimation interval is 3 if not specified
-			c.x = c.x > 0 ? c.x : 3;
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-				BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-				CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
-				bp.connect(f, 0, mul, 0);
-				bp.connect(f, 1, dec, 0);
-				bp.connect(dec, 0, mul, 1);
-				bp.add(f, mul, dec);
-				bp.setInput(f, 0, 0);
-				bp.setOutput(mul, 0, 0);
-				return bp;
-			}
-			else
-			{
-				ProcessorQueue[] out_queues;
-				if (is_stepwise)
-				{
-					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
-				}
-				else
-				{
-					out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
-				}
-				BeepBeepPipeline bp = new BeepBeepPipeline("ProductOneK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
-				ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
-				bp.add(compare_fork);
-				bp.setInput(compare_fork, 0, 0);
-				ProcessorModule out_1 = null, out_2 = null;
-				{
-					// Copy 1
-					ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-					BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-					CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
-					bp.connect(f, 0, mul, 0);
-					bp.connect(f, 1, dec, 0);
-					bp.connect(dec, 0, mul, 1);
-					bp.add(f, mul, dec);
-					bp.connect(compare_fork, 0, f, 0);
-					out_1 = mul;
-				}
-				{
-					// Copy 2
-					ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-					BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-					CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
-					bp.connect(f, 0, mul, 0);
-					bp.connect(f, 1, dec, 0);
-					bp.connect(dec, 0, mul, 1);
-					bp.add(f, mul, dec);
-					bp.connect(compare_fork, 1, f, 0);
-					out_2 = mul;
-				}
-				if (!is_stepwise)
-				{
-					BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
-					bp.add(comp_eq);
-					bp.connect(out_1, 0, comp_eq, 0);
-					bp.connect(out_2, 0, comp_eq, 1);
-					bp.setOutput(comp_eq, 0, 0);
-				}
-				else
-				{
-					bp.setOutput(out_1, 0, 0);
-					bp.setOutput(out_2, 0, 1);
-				}
-				return bp;
-			}
-		}
-		if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
-		{
-			// Window width is 3 if not specified
-			c.x = c.x > 0 ? c.x : 3;
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
-				WindowModule win = new WindowModule("Win", prod, c.x, domain, domain, Q_in, Q_out);
-				bp.add(win);
-				bp.setInput(win, 0, 0);
-				bp.setOutput(win, 0, 0);
-				return bp;
-			}
-			else
-			{
-				return null;
-			}
-			/*
-			BeepBeepPipeline bp = new BeepBeepPipeline("ProductWindowK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-			CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
-			WindowModule win = new WindowModule("Win", prod, c.x, domain, domain, Q_in, q_size, Q_out);
-			int out_arity = 1;
-			joinGroup(bp, win, win, domain, out_arity, Q_in, q_size, Q_out, property);
-			return bp;
-			 */
-		}
-		if (query.compareTo(Q_SUM_OF_ODDS) == 0)
-		{
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("SumOfOdds", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				TurnIntoModule one_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-				CumulateModule sum_1 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-				bp.connect(one_1, 0, sum_1, 0);
-				ForkModule f = new ForkModule("Fork3", domain, 3, 1);
-				bp.connect(sum_1, 0, f, 0);
-				TrimModule trim = new TrimModule("Trim1", 1, domain, 1);
-				bp.connect(f, 0, trim, 0);
-				UnaryApplyFunctionModule even = new UnaryApplyFunctionModule("IsEven", new NusmvNumbers.IsEven(domain), Q_in, Q_out);
-				bp.connect(trim, 0, even, 0);
-				TurnIntoModule one_2 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-				bp.connect(f, 2, one_2, 0);
-				BinaryApplyFunctionModule add = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
-				bp.connect(f, 1, add, 0);
-				bp.connect(one_2, 0, add, 1);
-				FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
-				bp.connect(even, 0, filter, 1);
-				bp.connect(add, 0, filter, 0);
-				CumulateModule sum_2 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-				bp.connect(filter, 0, sum_2, 0);
-				bp.add(one_1, sum_1, f, trim, even, one_2, add, filter);
-				bp.setInput(one_1, 0, 0);
-				bp.setOutput(sum_2, 0, 0);
-			}
-			else
-			{
-				return null;
-			}
-			/*
-			if (!is_comparison)
-			{
-				return bp;
-			}
-			compareWithItself(bp, domain, domain, Q_in, q_size, Q_out, property, f, trim, even, one_2, add, filter);
-			return bp;
-			 */
-		}
-		if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
-		{
-			if (r.getInt(DOMAIN_SIZE) < 3)
-			{
-				// This query is only possible if domain contains number 2
-				return null;
-			}
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("SumOfDoubles", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				ForkModule f = new ForkModule("Fork2", domain, 2, 1);
-				BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
-				TurnIntoModule two = new TurnIntoModule("TurnTwo", domain, domain, 2, Q_in, Q_out);
-				bp.connect(f, 0, mul, 0);
-				bp.connect(f, 1, two, 0);
-				bp.connect(two, 0, mul, 1);
-				CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-				bp.connect(mul, 0, sum, 0);
-				bp.add(f, mul, two, sum);
-				bp.setInput(f, 0, 0);
-				bp.setOutput(sum, 0, 0);
-				return bp;
-			}
-			else 
-			{
-				return null;
-			}
-		}
-		if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
-		{
-			// Window width is 3 if not specified
-			c.x = c.x > 0 ? c.x : 3;
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("WindowSumOfOne", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				TurnIntoModule one = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-				CumulateModule sum = new CumulateModule("Sum1", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-				bp.connect(one, 0, sum, 0);
-				CumulateModule add = new CumulateModule("Sum2", new NusmvNumbers.Addition(domain), c.x, c.x);
-				WindowModule win = new WindowModule("Win", add, c.x, domain, domain, Q_in, Q_out);
-				bp.connect(sum, 0, win, 0);
-				bp.add(win, sum);
-				bp.setInput(sum, 0, 0);
-				bp.setOutput(win, 0, 0);
-				return bp;
-			}
-			else
-			{
-				return null;
-			}
-		}
-		if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
-		{
-			// Parameter value is 3 if not specified
-			c.x = c.x > 0 ? c.x : 3;
-			if (r.getInt(DOMAIN_SIZE) <= c.x)
-			{
-				// This query is only possible if domain contains number k
-				return null;
-			}
-			if (!is_comparison)
-			{
-				BeepBeepPipeline bp = new BeepBeepPipeline("OutputIfSmallerThanK", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, new ProcessorQueue[] {new ProcessorQueue("ou", "oc_0", "ob_0", 1, domain)});
-				ForkModule f = new ForkModule("Fork3", domain, 3, 1);
-				FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
-				bp.connect(f, 0, filter, 0);
-				TurnIntoModule turn_k = new TurnIntoModule("TurnK", domain, domain, c.x, Q_in, Q_out);
-				bp.connect(f, 1, turn_k, 0);
-				TurnIntoModule turn_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
-				bp.connect(f, 2, turn_1, 0);
-				CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
-				bp.connect(turn_1, 0, sum, 0);
-				BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsLessOrEqual(domain), Q_in, q_size, Q_out);
-				bp.connect(turn_k, 0, gt, 1);
-				bp.connect(sum, 0, gt, 0);
-				bp.connect(gt, 0, filter, 1);
-				bp.add(f, filter, turn_k, turn_1, sum, gt);
-				bp.setInput(f, 0, 0);
-				bp.setOutput(filter, 0, 0);
-				return bp;
-			}
-			else
-			{
-				return null;
-			}
-		}
-		if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
+		else
 		{
 			ProcessorQueue[] out_queues;
 			if (is_stepwise)
@@ -513,163 +232,29 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 			{
 				out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
 			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumThree", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
+			BeepBeepPipeline bp = new BeepBeepPipeline(pipeline_name, new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
 			ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
 			bp.add(compare_fork);
 			bp.setInput(compare_fork, 0, 0);
-			ProcessorModule out_1 = null, out_2 = null;
-			GroupModule g1 = new GroupModule("Group1", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
-			{
-				int width = 3;
-				CumulateModule add = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), width, width);
-				WindowModule win = new WindowModule("Win", add, width, domain, domain, Q_in, Q_out);
-				g1.add(win);
-				g1.associateInput(0, win, 0);
-				g1.associateOutput(0, win, 0);
-			}
-			out_1 = g1;
-			bp.connect(compare_fork, 0, g1, 0);
-			GroupModule g2 = new GroupModule("Group2", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
-			{
-				ForkModule f = new ForkModule("Fork3", domain, 3, Q_in);
-				TrimModule trim1 = new TrimModule("Trim1", 1, domain, Q_in);
-				BinaryApplyFunctionModule add1 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
-				g2.connect(f, 0, add1, 0);
-				g2.connect(f, 1, trim1, 0);
-				g2.connect(trim1, 0, add1, 1);
-				TrimModule trim2 = new TrimModule("Trim2", 2, domain, Q_in);
-				BinaryApplyFunctionModule add2 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
-				g2.connect(f, 2, trim2, 0);
-				g2.connect(add1, 0, add2, 0);
-				g2.connect(trim2, 0, add2, 1);
-				g2.add(f, trim1, add1, trim2, add2);
-				g2.associateInput(0, f, 0);
-				g2.associateOutput(0, add2, 0);
-			}
-			out_2 = g2;
-			bp.connect(compare_fork, 1, g2, 0);
+			ProcessorModule[] ports1 = pc1.get(bp, domain, Q_in, q_size, Q_out, c);
+			bp.connect(compare_fork, 0, ports1[0], 0);
+			ProcessorModule[] ports2 = pc2.get(bp, domain, Q_in, q_size, Q_out, c);
+			bp.connect(compare_fork, 1, ports2[0], 0);
 			if (!is_stepwise)
 			{
 				BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
 				bp.add(comp_eq);
-				bp.connect(out_1, 0, comp_eq, 0);
-				bp.connect(out_2, 0, comp_eq, 1);
+				bp.connect(ports1[1], 0, comp_eq, 0);
+				bp.connect(ports2[1], 0, comp_eq, 1);
 				bp.setOutput(comp_eq, 0, 0);
 			}
 			else
 			{
-				bp.setOutput(out_1, 0, 0);
-				bp.setOutput(out_2, 0, 1);
+				bp.setOutput(ports1[1], 0, 0);
+				bp.setOutput(ports2[1], 0, 1);
 			}
 			return bp;
 		}
-		if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
-		{
-			ProcessorQueue[] out_queues;
-			if (is_stepwise)
-			{
-				out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
-			}
-			else
-			{
-				out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
-			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("CompareWindowSumTwo", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
-			ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
-			bp.add(compare_fork);
-			bp.setInput(compare_fork, 0, 0);
-			ProcessorModule out_1 = null, out_2 = null;
-			GroupModule g1 = new GroupModule("Group1", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
-			{
-				int width = 3;
-				CumulateModule add = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), width, width);
-				WindowModule win = new WindowModule("Win", add, width, domain, domain, Q_in, Q_out);
-				g1.add(win);
-				g1.associateInput(0, win, 0);
-				g1.associateOutput(0, win, 0);
-			}
-			out_1 = g1;
-			bp.connect(compare_fork, 0, g1, 0);
-			GroupModule g2 = new GroupModule("Group2", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
-			{
-				ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-				TrimModule trim1 = new TrimModule("Trim1", 1, domain, Q_in);
-				BinaryApplyFunctionModule add1 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
-				g2.connect(f, 0, add1, 0);
-				g2.connect(f, 1, trim1, 0);
-				g2.connect(trim1, 0, add1, 1);
-				g2.add(f, trim1, add1);
-				g2.associateInput(0, f, 0);
-				g2.associateOutput(0, add1, 0);
-			}
-			out_2 = g2;
-			bp.connect(compare_fork, 1, g2, 0);
-			if (!is_stepwise)
-			{
-				BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
-				bp.add(comp_eq);
-				bp.connect(out_1, 0, comp_eq, 0);
-				bp.connect(out_2, 0, comp_eq, 1);
-				bp.setOutput(comp_eq, 0, 0);
-			}
-			else
-			{
-				bp.setOutput(out_1, 0, 0);
-				bp.setOutput(out_2, 0, 1);
-			}
-			return bp;
-		}
-		if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
-		{
-			ProcessorQueue[] out_queues;
-			if (is_stepwise)
-			{
-				out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, domain), new ProcessorQueue("ou1", "oc_1", "ob_1", 1, domain)};
-			}
-			else
-			{
-				out_queues = new ProcessorQueue[] {new ProcessorQueue("ou0", "oc_0", "ob_0", 1, BooleanDomain.instance)};
-			}
-			BeepBeepPipeline bp = new BeepBeepPipeline("ComparePassthroughDelay", new ProcessorQueue[] {new ProcessorQueue("in", "inc_0", "inb_0", 1, domain)}, out_queues);
-			ForkModule compare_fork = new ForkModule("Fork2", domain, 2, Q_in);
-			bp.add(compare_fork);
-			bp.setInput(compare_fork, 0, 0);
-			ProcessorModule out_1 = null, out_2 = null;
-			PassthroughModule g1 = new PassthroughModule("pt", domain, Q_in);
-			out_1 = g1;
-			bp.connect(compare_fork, 0, g1, 0);
-			GroupModule g2 = new GroupModule("Group2", 1, new Domain[] {domain}, 1, new Domain[] {domain}, Q_in, Q_out);
-			{
-				ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
-				TrimModule trim = new TrimModule("Trim1", 1, domain, Q_in);
-				g2.connect(f, 1, trim, 0);
-				TurnIntoModule t = new TurnIntoModule("TurnTrue", domain, BooleanDomain.instance, true, Q_in, Q_out);
-				g2.connect(trim, 0, t, 0);
-				FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
-				g2.connect(f, 0, filter, 0);
-				g2.connect(t, 0, filter, 1);
-				g2.add(f, trim, t, filter);
-				g2.associateInput(0, f, 0);
-				g2.associateOutput(0, filter, 0);
-			}
-			out_2 = g2;
-			bp.connect(compare_fork, 1, g2, 0);
-			if (!is_stepwise)
-			{
-				BinaryApplyFunctionModule comp_eq = new BinaryApplyFunctionModule("Eq", new NusmvNumbers.IsEqual(domain), Q_in, q_size, Q_out);
-				bp.add(comp_eq);
-				bp.connect(out_1, 0, comp_eq, 0);
-				bp.connect(out_2, 0, comp_eq, 1);
-				bp.setOutput(comp_eq, 0, 0);
-			}
-			else
-			{
-				bp.setOutput(out_1, 0, 0);
-				bp.setOutput(out_2, 0, 1);
-			}
-			return bp;
-		}
-		return null;
 	}
 
 	/**
@@ -732,5 +317,336 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	protected static class Count
 	{
 		public int x = 0;
+	}
+	
+	protected static PipelineCreatorPair getPipelineCreators(Region r, Count c)
+	{
+		String query = r.getString(QUERY);
+		PipelineCreator pc1 = null, pc2 = null;
+		String pipeline_name = "";
+		if (query.compareTo(Q_PASSTHROUGH) == 0)
+		{
+			pc1 = new CreatePassthrough();
+			pc2 = new CreatePassthrough();
+			pipeline_name = "Passthrough";
+		}
+		else if (query.compareTo(Q_PRODUCT) == 0)
+		{
+			pc1 = new CreateProduct();
+			pc2 = new CreateProduct();
+			pipeline_name = "Product";
+		}
+		else if (query.compareTo(Q_PRODUCT_1_K) == 0)
+		{
+			// Decimation interval is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			pc1 = new CreateProductOneK();
+			pc2 = new CreateProductOneK();
+			pipeline_name = "ProductOneK";
+		}
+		else if (query.compareTo(Q_PRODUCT_WINDOW_K) == 0)
+		{
+			// Window width is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			pc1 = new CreateProductWindowK();
+			pc2 = new CreateProductWindowK();
+			pipeline_name = "ProductWindowK";
+		}
+		else if (query.compareTo(Q_SUM_OF_ODDS) == 0)
+		{
+			pc1 = new CreateSumOfOdds();
+			pc2 = new CreateSumOfOdds();
+			pipeline_name = "SumOfOdds";
+		}
+		else if (query.compareTo(Q_SUM_OF_DOUBLES) == 0)
+		{
+			if (r.getInt(DOMAIN_SIZE) < 3)
+			{
+				// This query is only possible if domain contains number 2
+				return null;
+			}
+			pc1 = new CreateSumOfDoubles();
+			pc2 = new CreateSumOfDoubles();
+			pipeline_name = "SumOfDoubles";
+		}
+		else if (query.compareTo(Q_WIN_SUM_OF_1) == 0)
+		{
+			// Window width is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			pc1 = new CreateWinSumOfOne();
+			pc2 = new CreateWinSumOfOne();
+			pipeline_name = "WindowSumOfOne";
+		}
+		else if (query.compareTo(Q_OUTPUT_IF_SMALLER_K) == 0)
+		{
+			// Parameter value is 3 if not specified
+			c.x = c.x > 0 ? c.x : 3;
+			if (r.getInt(DOMAIN_SIZE) <= c.x)
+			{
+				// This query is only possible if domain contains number k
+				return null;
+			}
+			pc1 = new CreateOutputIfSmallerThanK();
+			pc2 = new CreateOutputIfSmallerThanK();
+			pipeline_name = "OutputIfSmallerThanK";
+		}
+		else if (query.compareTo(Q_COMPARE_WINDOW_SUM_3) == 0)
+		{
+			pc1 = new CreateCompareWindowSum3a();
+			pc2 = new CreateCompareWindowSum3b();
+			pipeline_name = "CompareWindowSumThree";
+		}
+		else if (query.compareTo(Q_COMPARE_WINDOW_SUM_2) == 0)
+		{
+			pc1 = new CreateCompareWindowSum2a();
+			pc2 = new CreateCompareWindowSum2b();
+			pipeline_name = "CompareWindowSumTwo";
+		}
+		else if (query.compareTo(Q_COMPARE_PASSTHROUGH_DELAY) == 0)
+		{
+			pc1 = new CreatePassthrough();
+			pc2 = new CreateFilterDelay();
+			pipeline_name = "ComparePassthroughDelay";
+		}
+		return new PipelineCreatorPair(pc1, pc2, pipeline_name);
+	}
+
+	protected interface PipelineCreator
+	{
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c);
+	}
+
+	protected static class CreatePassthrough implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			PassthroughModule pt = new PassthroughModule("pt", domain, Q_in);
+			bp.add(pt);
+			return new ProcessorModule[] {pt, pt};
+		}
+	}
+	
+	protected static class CreateProduct implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			CumulateModule prod = new CumulateModule("prod", new NusmvNumbers.Multiplication(domain), Q_in, Q_out);
+			bp.add(prod);
+			return new ProcessorModule[] {prod, prod};
+		}
+	}
+	
+	protected static class CreateProductOneK implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+			CountDecimateModule dec = new CountDecimateModule("Decimate" + c.x, c.x, domain, Q_in, Q_out);
+			bp.connect(f, 0, mul, 0);
+			bp.connect(f, 1, dec, 0);
+			bp.connect(dec, 0, mul, 1);
+			bp.add(f, mul, dec);
+			return new ProcessorModule[] {f, mul};
+		}
+	}
+	
+	protected static class CreateProductWindowK implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			CumulateModule prod = new CumulateModule("Product", new NusmvNumbers.Multiplication(domain), c.x, c.x);
+			WindowModule win = new WindowModule("Win", prod, c.x, domain, domain, Q_in, Q_out);
+			bp.add(win);
+			return new ProcessorModule[] {win, win};
+		}
+	}
+	
+	protected static class CreateSumOfOdds implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			TurnIntoModule one_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+			CumulateModule sum_1 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+			bp.connect(one_1, 0, sum_1, 0);
+			ForkModule f = new ForkModule("Fork3", domain, 3, 1);
+			bp.connect(sum_1, 0, f, 0);
+			TrimModule trim = new TrimModule("Trim1", 1, domain, 1);
+			bp.connect(f, 0, trim, 0);
+			UnaryApplyFunctionModule even = new UnaryApplyFunctionModule("IsEven", new NusmvNumbers.IsEven(domain), Q_in, Q_out);
+			bp.connect(trim, 0, even, 0);
+			TurnIntoModule one_2 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+			bp.connect(f, 2, one_2, 0);
+			BinaryApplyFunctionModule add = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
+			bp.connect(f, 1, add, 0);
+			bp.connect(one_2, 0, add, 1);
+			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
+			bp.connect(even, 0, filter, 1);
+			bp.connect(add, 0, filter, 0);
+			CumulateModule sum_2 = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+			bp.connect(filter, 0, sum_2, 0);
+			bp.add(one_1, sum_1, f, trim, even, one_2, add, filter);
+			return new ProcessorModule[] {one_1, sum_2};
+		}
+	}
+	
+	protected static class CreateSumOfDoubles implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork2", domain, 2, 1);
+			BinaryApplyFunctionModule mul = new BinaryApplyFunctionModule("Mul", new NusmvNumbers.Multiplication(domain), Q_in, q_size, Q_out);
+			TurnIntoModule two = new TurnIntoModule("TurnTwo", domain, domain, 2, Q_in, Q_out);
+			bp.connect(f, 0, mul, 0);
+			bp.connect(f, 1, two, 0);
+			bp.connect(two, 0, mul, 1);
+			CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+			bp.connect(mul, 0, sum, 0);
+			bp.add(f, mul, two, sum);
+			return new ProcessorModule[] {f, sum};
+		}
+	}
+	
+	protected static class CreateWinSumOfOne implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			TurnIntoModule one = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+			CumulateModule sum = new CumulateModule("Sum1", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+			bp.connect(one, 0, sum, 0);
+			CumulateModule add = new CumulateModule("Sum2", new NusmvNumbers.Addition(domain), c.x, c.x);
+			WindowModule win = new WindowModule("Win", add, c.x, domain, domain, Q_in, Q_out);
+			bp.connect(sum, 0, win, 0);
+			bp.add(win, sum);
+			return new ProcessorModule[] {sum, win};
+		}
+	}
+	
+	protected static class CreateOutputIfSmallerThanK implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork3", domain, 3, 1);
+			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
+			bp.connect(f, 0, filter, 0);
+			TurnIntoModule turn_k = new TurnIntoModule("TurnK", domain, domain, c.x, Q_in, Q_out);
+			bp.connect(f, 1, turn_k, 0);
+			TurnIntoModule turn_1 = new TurnIntoModule("TurnOne", domain, domain, 1, Q_in, Q_out);
+			bp.connect(f, 2, turn_1, 0);
+			CumulateModule sum = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), Q_in, Q_out);
+			bp.connect(turn_1, 0, sum, 0);
+			BinaryApplyFunctionModule gt = new BinaryApplyFunctionModule("Greater", new NusmvNumbers.IsLessOrEqual(domain), Q_in, q_size, Q_out);
+			bp.connect(turn_k, 0, gt, 1);
+			bp.connect(sum, 0, gt, 0);
+			bp.connect(gt, 0, filter, 1);
+			bp.add(f, filter, turn_k, turn_1, sum, gt);
+			bp.setInput(f, 0, 0);
+			bp.setOutput(filter, 0, 0);
+			return new ProcessorModule[] {f, filter};
+		}
+	}
+	
+	protected static class CreateCompareWindowSum3a implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			int width = 3;
+			CumulateModule add = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), width, width);
+			WindowModule win = new WindowModule("Win", add, width, domain, domain, Q_in, Q_out);
+			bp.add(win);
+			return new ProcessorModule[] {win, win};
+		}
+	}
+	
+	protected static class CreateCompareWindowSum3b implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork3", domain, 3, Q_in);
+			TrimModule trim1 = new TrimModule("Trim1", 1, domain, Q_in);
+			BinaryApplyFunctionModule add1 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
+			bp.connect(f, 0, add1, 0);
+			bp.connect(f, 1, trim1, 0);
+			bp.connect(trim1, 0, add1, 1);
+			TrimModule trim2 = new TrimModule("Trim2", 2, domain, Q_in);
+			BinaryApplyFunctionModule add2 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
+			bp.connect(f, 2, trim2, 0);
+			bp.connect(add1, 0, add2, 0);
+			bp.connect(trim2, 0, add2, 1);
+			bp.add(f, trim1, add1, trim2, add2);
+			return new ProcessorModule[] {f, add2};
+		}
+	}
+	
+	protected static class CreateCompareWindowSum2a implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			int width = 2;
+			CumulateModule add = new CumulateModule("Sum", new NusmvNumbers.Addition(domain), width, width);
+			WindowModule win = new WindowModule("Win", add, width, domain, domain, Q_in, Q_out);
+			bp.add(win);
+			return new ProcessorModule[] {win, win};
+		}
+	}
+	
+	protected static class CreateCompareWindowSum2b implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+			TrimModule trim1 = new TrimModule("Trim1", 1, domain, Q_in);
+			BinaryApplyFunctionModule add1 = new BinaryApplyFunctionModule("Add", new NusmvNumbers.Addition(domain), Q_in, q_size, Q_out);
+			bp.connect(f, 0, add1, 0);
+			bp.connect(f, 1, trim1, 0);
+			bp.connect(trim1, 0, add1, 1);
+			bp.add(f, trim1, add1);
+			return new ProcessorModule[] {f, add1};
+		}
+	}
+	
+	protected static class CreateFilterDelay implements PipelineCreator
+	{
+		@Override
+		public ProcessorModule[] get(BeepBeepPipeline bp, Domain domain, int Q_in, int q_size, int Q_out, Count c)
+		{
+			ForkModule f = new ForkModule("Fork2", domain, 2, Q_in);
+			TrimModule trim = new TrimModule("Trim1", 1, domain, Q_in);
+			bp.connect(f, 1, trim, 0);
+			TurnIntoModule t = new TurnIntoModule("TurnTrue", domain, BooleanDomain.instance, true, Q_in, Q_out);
+			bp.connect(trim, 0, t, 0);
+			FilterModule filter = new FilterModule("Filter", domain, Q_in, q_size, Q_out);
+			bp.connect(f, 0, filter, 0);
+			bp.connect(t, 0, filter, 1);
+			bp.add(f, trim, t, filter);
+			return new ProcessorModule[] {f, filter};
+		}
+	}
+	
+	protected static class PipelineCreatorPair
+	{
+		public PipelineCreator pc1;
+		public PipelineCreator pc2;
+		public String pipeline_name;
+		
+		public PipelineCreatorPair(PipelineCreator pc1, PipelineCreator pc2, String pipeline_name)
+		{
+			super();
+			this.pc1 = pc1;
+			this.pc2 = pc2;
+			this.pipeline_name = pipeline_name;
+		}
 	}
 }
