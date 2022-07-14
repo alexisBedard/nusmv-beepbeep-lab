@@ -139,6 +139,37 @@ public class MainLab extends Laboratory
 				et_q_all.add(e);
 			}
 		}
+		
+		// Impact of domain size for the "no full queues" property on all queries
+				{
+					Group g_q = new Group("Impact of domain size for \"no full queues\"");
+					add(g_q);
+					Region r = new Region();
+					r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
+					r.add(PROPERTY, NoFullQueues.NAME);
+					r.add(QUEUE_SIZE, 2);
+					r.addRange(DOMAIN_SIZE, 2, 5, 1);
+					ExperimentTable et_q_all = new ExperimentTable(DOMAIN_SIZE, QUERY, TIME);
+					add(et_q_all);
+					et_q_all.setShowInList(false);
+					TransformedTable tt_q_all = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et_q_all);
+					tt_q_all.setTitle("Impact of domain size for \"no full queues\"");
+					tt_q_all.setNickname("tImpactDomainsNoFullQueues");
+					add(tt_q_all);
+					Scatterplot plot = new Scatterplot(tt_q_all);
+					plot.setTitle(tt_q_all.getTitle());
+					plot.setNickname("pImpactDomainsNoFullQueues");
+					for (Region q_r : r.all(QUERY, PROPERTY, QUEUE_SIZE, DOMAIN_SIZE))
+					{
+						NuSMVExperiment e = m_factory.get(q_r);
+						if (e == null)
+						{
+							continue;
+						}
+						g_q.add(e);
+						et_q_all.add(e);
+					}
+				}
 
 		// Impact of window width on processors that contain a window
 		{
