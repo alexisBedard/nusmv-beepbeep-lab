@@ -19,5 +19,10 @@
   	"OS" : "Ubuntu 18.04",
   	"CPU" : "Intel CORE i5-7200U 2.5 GHz",
   	"RAM": "8 GB"
+  },
+  "Ouiatchouan" : {
+  	"OS" : "Ubuntu 20.04",
+  	"CPU" : "AMD Athlon II X4 640 1.8 GHz",
+  	"RAM": "12 GB"
   }
 }

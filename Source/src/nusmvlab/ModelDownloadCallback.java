@@ -26,22 +26,22 @@ import com.sun.net.httpserver.HttpExchange;
 
 import ca.uqac.lif.jerrydog.CallbackResponse;
 import ca.uqac.lif.jerrydog.CallbackResponse.ContentType;
-import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.server.WebCallback;
+import ca.uqac.lif.labpal.server.LabPalServer;
+import ca.uqac.lif.labpal.server.LaboratoryCallback;
 
 /**
  * Page added to the lab's web interface that sends the NuSMV model to the
  * user as a downloadable file.
  */
-public class ModelDownloadCallback extends WebCallback
+public class ModelDownloadCallback extends LaboratoryCallback
 {
 	/**
 	 * Creates a new instance of the callback.
 	 * @param lab The lab where this callback will be added
 	 */
-	public ModelDownloadCallback(Laboratory lab)
+	public ModelDownloadCallback(LabPalServer server)
 	{
-		super("/download-model", lab, null);
+		super(server, Method.GET, "/download-model");
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class ModelDownloadCallback extends WebCallback
     	return response;
     }
     int exp_id = Integer.parseInt(params.get("id").trim());
-		NuSMVExperiment exp = (NuSMVExperiment) m_lab.getExperiment(exp_id);
+		NuSMVExperiment exp = (NuSMVExperiment) getServer().getLaboratory().getExperiment(exp_id);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
 		try

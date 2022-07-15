@@ -21,11 +21,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import ca.uqac.lif.json.JsonElement;
-import ca.uqac.lif.json.JsonNumber;
-import ca.uqac.lif.labpal.Experiment;
+import ca.uqac.lif.labpal.experiment.Experiment;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.macro.MacroMap;
+import ca.uqac.lif.labpal.Stateful;
+import ca.uqac.lif.labpal.macro.Macro;
 
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
@@ -33,7 +32,7 @@ import static nusmvlab.ModelProvider.QUEUE_SIZE;
 /**
  * Computes statistics about the NuSMV models included in the lab.
  */
-public class ModelStats extends MacroMap
+public class ModelStats extends Macro
 {
 	/**
 	 * Creates a new instance of the macro.
@@ -51,7 +50,7 @@ public class ModelStats extends MacroMap
 	}
 
 	@Override
-	public void computeValues(Map<String, JsonElement> paramMap)
+	public void computeValues(Map<String,Object> paramMap)
 	{
 		int min_procs = 1000, max_procs = 0, max_vars = 0, max_modules = 0, max_queue = 0, max_domain = 0;
 		Set<ModelId> ids = new HashSet<ModelId>();
@@ -76,12 +75,39 @@ public class ModelStats extends MacroMap
 				max_domain = Math.max(max_domain, ne.readInt(DOMAIN_SIZE));
 			}
 		}
-		paramMap.put("minprocessors", new JsonNumber(min_procs));
-		paramMap.put("maxprocessors", new JsonNumber(max_procs));
-		paramMap.put("maxmodules", new JsonNumber(max_modules));
-		paramMap.put("maxvariables", new JsonNumber(max_vars));
-		paramMap.put("maxqueuesize", new JsonNumber(max_queue));
-		paramMap.put("maxdomainsize", new JsonNumber(max_domain));
-		paramMap.put("nummodels", new JsonNumber(ids.size()));
+		paramMap.put("minprocessors", min_procs);
+		paramMap.put("maxprocessors", max_procs);
+		paramMap.put("maxmodules", max_modules);
+		paramMap.put("maxvariables", max_vars);
+		paramMap.put("maxqueuesize", max_queue);
+		paramMap.put("maxdomainsize", max_domain);
+		paramMap.put("nummodels", ids.size());
+	}
+
+	@Override
+	public Status getStatus()
+	{
+		return Stateful.Status.DONE;
+	}
+
+	@Override
+	public void reset()
+	{
+		for (Experiment e : m_lab.getExperiments())
+		{
+			e.reset();
+		}
+	}
+
+	@Override
+	public float getProgression()
+	{
+		return 1;
+	}
+
+	@Override
+	public String getNickname()
+	{
+		return "";
 	}
 }

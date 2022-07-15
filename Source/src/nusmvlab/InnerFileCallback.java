@@ -19,9 +19,9 @@ package nusmvlab;
 
 import ca.uqac.lif.jerrydog.CallbackResponse;
 import ca.uqac.lif.jerrydog.CallbackResponse.ContentType;
-import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.server.WebCallback;
-import ca.uqac.lif.mtnp.util.FileHelper;
+import ca.uqac.lif.labpal.server.LabPalServer;
+import ca.uqac.lif.labpal.server.LaboratoryCallback;
+import ca.uqac.lif.labpal.util.FileHelper;
 import com.sun.net.httpserver.HttpExchange;
 import java.net.URI;
 
@@ -29,11 +29,11 @@ import java.net.URI;
  * Special callback for the LabPal server to fetch images from the
  * internal JAR.
  */
-public class InnerFileCallback extends WebCallback
+public class InnerFileCallback extends LaboratoryCallback
 {
-  public InnerFileCallback(Laboratory lab)
+  public InnerFileCallback(LabPalServer server)
   {
-    super("/resource", lab, null);
+    super(server, Method.GET, "/resource");
   }
 
   @Override
@@ -43,7 +43,7 @@ public class InnerFileCallback extends WebCallback
     URI uri = he.getRequestURI();
     String path = uri.getPath();
     path = path.substring(1); // Remove first slash
-    byte[] file_contents = FileHelper.internalFileToBytes(m_lab.getClass(), path);
+    byte[] file_contents = FileHelper.internalFileToBytes(getServer().getLaboratory().getClass(), path);
     if (file_contents == null)
     {
       cbr.setCode(CallbackResponse.HTTP_NOT_FOUND);

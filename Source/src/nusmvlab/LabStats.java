@@ -19,21 +19,21 @@ package nusmvlab;
 
 import java.util.Map;
 
-import ca.uqac.lif.json.JsonElement;
 import ca.uqac.lif.json.JsonMap;
-import ca.uqac.lif.json.JsonNumber;
 import ca.uqac.lif.json.JsonParser;
 import ca.uqac.lif.json.JsonParser.JsonParseException;
 import ca.uqac.lif.json.JsonString;
-import ca.uqac.lif.labpal.FileHelper;
+import ca.uqac.lif.labpal.Stateful;
+import ca.uqac.lif.labpal.util.FileHelper;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.macro.MacroMap;
+import ca.uqac.lif.labpal.experiment.Experiment;
+import ca.uqac.lif.labpal.macro.Macro;
 
 /**
  * Computes various static parameters about the environment in which the
  * lab is executed.
  */
-public class LabStats extends MacroMap
+public class LabStats extends Macro
 {
 	protected transient JsonMap m_fileContents;
 
@@ -67,13 +67,13 @@ public class LabStats extends MacroMap
 	}
 
 	@Override
-	public void computeValues(Map<String,JsonElement> map)
+	public void computeValues(Map<String,Object> map)
 	{
-		map.put("machinestring", new JsonString(getMachineString()));
-		map.put("machineram", new JsonString(getMachineRam()));
-		map.put("jvmram", new JsonString(getMemory()));
-		map.put("numexperiments", new JsonNumber(m_lab.getExperimentIds().size()));
-		map.put("numdatapoints", new JsonNumber(m_lab.countDataPoints()));
+		map.put("machinestring", getMachineString());
+		map.put("machineram", getMachineRam());
+		map.put("jvmram", getMemory());
+		map.put("numexperiments", m_lab.getExperiments().size());
+		map.put("numdatapoints", m_lab.countDataPoints());
 	}
 
 	protected String getMemory()
@@ -100,5 +100,42 @@ public class LabStats extends MacroMap
 			return "";
 		}
 		return ((JsonString) m_fileContents.get("RAM")).stringValue(); 
+	}
+
+	@Override
+	public Status getStatus()
+	{
+		return Stateful.getLowestStatus(m_lab.getExperiments());
+	}
+
+	@Override
+	public void reset()
+	{
+		for (Experiment e : m_lab.getExperiments())
+		{
+			e.reset();
+		}
+	}
+
+	@Override
+	public float getProgression()
+	{
+		float t = 0, n = 0;
+		for (Experiment e : m_lab.getExperiments())
+		{
+			t += e.getProgression();
+			n++;
+		}
+		if (n == 0)
+		{
+			return 1;
+		}
+		return t / n;
+	}
+
+	@Override
+	public String getNickname()
+	{
+		return "";
 	}
 }

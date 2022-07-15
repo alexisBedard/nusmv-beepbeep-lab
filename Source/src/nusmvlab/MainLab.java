@@ -17,25 +17,32 @@
  */
 package nusmvlab;
 
-import ca.uqac.lif.labpal.CliParser;
-import ca.uqac.lif.labpal.CliParser.Argument;
-import ca.uqac.lif.labpal.CliParser.ArgumentMap;
-import ca.uqac.lif.labpal.Group;
+import ca.uqac.lif.labpal.util.CliParser;
+import ca.uqac.lif.labpal.util.CliParser.Argument;
+import ca.uqac.lif.labpal.util.CliParser.ArgumentMap;
+import ca.uqac.lif.spreadsheet.chart.Chart.Axis;
+import ca.uqac.lif.spreadsheet.chart.gnuplot.GnuplotHistogram;
+import ca.uqac.lif.spreadsheet.chart.gnuplot.GnuplotScatterplot;
+import ca.uqac.lif.spreadsheet.functions.ExpandAsColumns;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.LatexNamer;
-import ca.uqac.lif.labpal.Region;
-import ca.uqac.lif.labpal.server.WebCallback;
+import ca.uqac.lif.labpal.plot.Plot;
+import ca.uqac.lif.labpal.region.Point;
+import ca.uqac.lif.labpal.region.Region;
+import ca.uqac.lif.labpal.experiment.ExperimentGroup;
+import ca.uqac.lif.labpal.server.LabPalServer;
+import ca.uqac.lif.labpal.server.LaboratoryCallback;
 import ca.uqac.lif.labpal.table.ExperimentTable;
-import ca.uqac.lif.mtnp.plot.TwoDimensionalPlot.Axis;
-import ca.uqac.lif.mtnp.plot.gnuplot.ClusteredHistogram;
-import ca.uqac.lif.mtnp.plot.gnuplot.Scatterplot;
-import ca.uqac.lif.mtnp.table.ExpandAsColumns;
-import ca.uqac.lif.mtnp.table.TransformedTable;
+import ca.uqac.lif.labpal.table.TransformedTable;
 import nusmvlab.StreamPropertyLibrary.BoundedLiveness;
 import nusmvlab.StreamPropertyLibrary.Liveness;
 import nusmvlab.StreamPropertyLibrary.NoFullQueues;
 import nusmvlab.StreamPropertyLibrary.OutputAlwaysTrue;
 import nusmvlab.StreamPropertyLibrary.OutputsAlwaysEqual;
+
+import static ca.uqac.lif.labpal.region.DiscreteRange.range;
+import static ca.uqac.lif.labpal.region.ExtensionDomain.extension;
+import static ca.uqac.lif.labpal.region.ProductRegion.product;
+import static ca.uqac.lif.labpal.latex.LatexExportable.latexify;
 
 import static nusmvlab.BeepBeepModelProvider.K;
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
@@ -71,7 +78,7 @@ public class MainLab extends Laboratory
 	public void setup()
 	{
 		// Lab metadata
-		setTitle("A benchmark for NuSMV extensions to BeepBeep 3");
+		setName("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
 		setDoi("10.5281/zenodo.5386462");
 
@@ -90,34 +97,40 @@ public class MainLab extends Laboratory
 			{
 				NuSMVExperiment.NUSMV_PATH = "NuSMV";
 			}
+			if (args.hasOption("with-equivalence"))
+			{
+				include_equivalence = true;
+			}
 		}
+		System.out.print("Writing models");
 
 		// Impact of queue size and domain size on all processor chains
 		{
-			Group g_q = new Group("Impact of queue size");
+			ExperimentGroup g_q = new ExperimentGroup("Impact of queue size");
 			add(g_q);
-			Group g_d = new Group("Impact of domain size");
+			ExperimentGroup g_d = new ExperimentGroup("Impact of domain size");
 			add(g_d);
-			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
-			r.addRange(DOMAIN_SIZE, 2, 5, 1);
-			r.addRange(QUEUE_SIZE, 1, 4, 1);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K),
+					extension(PROPERTY, NoFullQueues.NAME, Liveness.NAME),
+					range(DOMAIN_SIZE, 2, 5, 1),
+					range(QUEUE_SIZE, 1, 4, 1));
 			for (Region q_r : r.all(QUERY))
 			{
 				setupQueueDomain(q_r, g_q, g_d);
 			}
 		}
+		System.out.print(".");
 
 		// Impact of queue size for the "no full queues" property on all queries
 		{
-			Group g_q = new Group("Impact of queue size for \"no full queues\"");
+			ExperimentGroup g_q = new ExperimentGroup("Impact of queue size for \"no full queues\"");
 			add(g_q);
-			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			r.add(PROPERTY, NoFullQueues.NAME);
-			r.add(DOMAIN_SIZE, 5);
-			r.addRange(QUEUE_SIZE, 1, 4, 1);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K),
+					extension(PROPERTY, NoFullQueues.NAME),
+					extension(DOMAIN_SIZE, 5),
+					range(QUEUE_SIZE, 1, 4, 1));
 			ExperimentTable et_q_all = new ExperimentTable(QUEUE_SIZE, QUERY, TIME);
 			add(et_q_all);
 			et_q_all.setShowInList(false);
@@ -125,12 +138,11 @@ public class MainLab extends Laboratory
 			tt_q_all.setTitle("Impact of queue size for \"no full queues\"");
 			tt_q_all.setNickname("tImpactQueuesNoFullQueues");
 			add(tt_q_all);
-			Scatterplot plot = new Scatterplot(tt_q_all);
-			plot.setTitle(tt_q_all.getTitle());
-			plot.setNickname("pImpactQueuesNoFullQueues");
+			Plot plot = add(new Plot(tt_q_all, new GnuplotScatterplot().setTitle(tt_q_all.getTitle())).setNickname("pImpactQueuesNoFullQueues"));
 			for (Region q_r : r.all(QUERY, PROPERTY, QUEUE_SIZE, DOMAIN_SIZE))
 			{
-				NuSMVExperiment e = m_factory.get(q_r);
+				Point p = q_r.asPoint();
+				NuSMVExperiment e = m_factory.get(p);
 				if (e == null)
 				{
 					continue;
@@ -139,64 +151,65 @@ public class MainLab extends Laboratory
 				et_q_all.add(e);
 			}
 		}
-		
+		System.out.print(".");
+
 		// Impact of domain size for the "no full queues" property on all queries
+		{
+			ExperimentGroup g_q = new ExperimentGroup("Impact of domain size for \"no full queues\"");
+			add(g_q);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K),
+					extension(PROPERTY, NoFullQueues.NAME),
+					extension(QUEUE_SIZE, 2),
+					range(DOMAIN_SIZE, 2, 5, 1));
+			ExperimentTable et_q_all = new ExperimentTable(DOMAIN_SIZE, QUERY, TIME);
+			add(et_q_all);
+			et_q_all.setShowInList(false);
+			TransformedTable tt_q_all = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et_q_all);
+			tt_q_all.setTitle("Impact of domain size for \"no full queues\"");
+			tt_q_all.setNickname("tImpactDomainsNoFullQueues");
+			add(tt_q_all);
+			Plot plot = add(new Plot(tt_q_all, new GnuplotScatterplot().setTitle(tt_q_all.getTitle())).setNickname("pImpactDomainsNoFullQueues"));
+			for (Region q_r : r.all(QUERY, PROPERTY, QUEUE_SIZE, DOMAIN_SIZE))
+			{
+				NuSMVExperiment e = m_factory.get(q_r.asPoint());
+				if (e == null)
 				{
-					Group g_q = new Group("Impact of domain size for \"no full queues\"");
-					add(g_q);
-					Region r = new Region();
-					r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_SUM_OF_ODDS, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-					r.add(PROPERTY, NoFullQueues.NAME);
-					r.add(QUEUE_SIZE, 2);
-					r.addRange(DOMAIN_SIZE, 2, 5, 1);
-					ExperimentTable et_q_all = new ExperimentTable(DOMAIN_SIZE, QUERY, TIME);
-					add(et_q_all);
-					et_q_all.setShowInList(false);
-					TransformedTable tt_q_all = new TransformedTable(new ExpandAsColumns(QUERY, TIME), et_q_all);
-					tt_q_all.setTitle("Impact of domain size for \"no full queues\"");
-					tt_q_all.setNickname("tImpactDomainsNoFullQueues");
-					add(tt_q_all);
-					Scatterplot plot = new Scatterplot(tt_q_all);
-					plot.setTitle(tt_q_all.getTitle());
-					plot.setNickname("pImpactDomainsNoFullQueues");
-					for (Region q_r : r.all(QUERY, PROPERTY, QUEUE_SIZE, DOMAIN_SIZE))
-					{
-						NuSMVExperiment e = m_factory.get(q_r);
-						if (e == null)
-						{
-							continue;
-						}
-						g_q.add(e);
-						et_q_all.add(e);
-					}
+					continue;
 				}
+				g_q.add(e);
+				et_q_all.add(e);
+			}
+		}
+		System.out.print(".");
 
 		// Impact of window width on processors that contain a window
 		{
-			Group g = new Group("Impact of parameter k");
+			ExperimentGroup g = new ExperimentGroup("Impact of parameter k");
 			add(g);
-			Region r = new Region();
-			r.add(QUERY, Q_PRODUCT_WINDOW_K, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K);
-			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME);
-			r.add(QUEUE_SIZE, 2);
-			r.add(DOMAIN_SIZE, 3);
-			r.addRange(K, 2, 5);
+			Region r = product(
+					extension(QUERY, Q_PRODUCT_WINDOW_K, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K),
+					extension(PROPERTY, NoFullQueues.NAME, Liveness.NAME),
+					extension(QUEUE_SIZE, 2),
+					extension(DOMAIN_SIZE, 3),
+					range(K, 2, 5));			
 			for (Region q_r : r.all(QUERY))
 			{
 				setupK(q_r, g);
 			}
 		}
+		System.out.print(".");
 
 		// Comparison of processor chains on all properties, for a fixed queue size and domain size
 		{
-			Group g = new Group("Impact of query");
-			g.setDescription("Comparison of processor chains on all properties, for a fixed queue size and domain size");
+			ExperimentGroup g = new ExperimentGroup("Impact of query", "Comparison of processor chains on all properties, for a fixed queue size and domain size");
 			add(g);
-			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS);
-			r.add(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME);
-			r.add(DOMAIN_SIZE, 4);
-			r.add(QUEUE_SIZE, 3);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS),
+					extension(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME),
+					extension(QUEUE_SIZE, 3),
+					extension(DOMAIN_SIZE, 4),
+					range(K, 2, 5));
 			ExperimentTable et_time = new ExperimentTable(QUERY, PROPERTY, TIME);
 			et_time.setShowInList(false);
 			add(et_time);
@@ -204,13 +217,10 @@ public class MainLab extends Laboratory
 			tt_time.setTitle("Running time by processor chain");
 			tt_time.setNickname("tPropertyTime");
 			add(tt_time);
-			ClusteredHistogram ch = new ClusteredHistogram(tt_time);
-			ch.setTitle(tt_time.getTitle());
-			ch.setNickname("pPropertyTime");
-			add(ch);
+			Plot ch = add(new Plot(tt_time, new GnuplotHistogram().setTitle(tt_time.getTitle())).setNickname("pPropertyTime"));
 			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
-				NuSMVExperiment e = m_factory.get(q_r);
+				NuSMVExperiment e = m_factory.get(q_r.asPoint());
 				if (e == null)
 				{
 					continue;
@@ -219,31 +229,29 @@ public class MainLab extends Laboratory
 				g.add(e);
 			}
 		}
+		System.out.print(".");
 
 		// Sequence equivalence experiments
 		if (include_equivalence)
 		{
-			Group g = new Group("Sequence and step-wise equivalence");
-			g.setDescription("These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>), or that they produce the same output at every computation step (<em>stepwise equivalence</em>).");
+			ExperimentGroup g = new ExperimentGroup("Sequence and step-wise equivalence", "These experiments compare two processor pipelines and verify that they always produce identical output streams for any input stream (what is called <em>sequence equivalence</em>), or that they produce the same output at every computation step (<em>stepwise equivalence</em>).");
 			add(g);
-			Region r = new Region();
-			r.add(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY);
-			r.add(PROPERTY, OutputAlwaysTrue.NAME, OutputsAlwaysEqual.NAME);
-			r.add(QUEUE_SIZE, 2);
-			r.add(DOMAIN_SIZE, 2);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS, Q_COMPARE_WINDOW_SUM_2, Q_COMPARE_WINDOW_SUM_3, Q_COMPARE_PASSTHROUGH_DELAY),
+					extension(PROPERTY, OutputAlwaysTrue.NAME, OutputsAlwaysEqual.NAME),
+					extension(QUEUE_SIZE, 2),
+					extension(DOMAIN_SIZE, 2),
+					range(K, 2, 5));
 			ExperimentTable et = new ExperimentTable(QUERY, PROPERTY, TIME);
 			et.setShowInList(false);
 			TransformedTable tt = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et);
 			tt.setTitle("Running time for sequence equivalence");
 			tt.setNickname("tSequenceEquivalenceTime");
 			add(et, tt);
-			ClusteredHistogram ch = new ClusteredHistogram(tt);
-			ch.setTitle(tt.getTitle());
-			ch.setNickname("pSequenceEquivalenceTime");
-			add(ch);
+			Plot ch = add(new Plot(tt, new GnuplotHistogram().setTitle(tt.getTitle())).setNickname("pSequenceEquivalenceTime"));
 			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
-				NuSMVExperiment e = m_factory.get(q_r);
+				NuSMVExperiment e = m_factory.get(q_r.asPoint());
 				if (e == null)
 				{
 					continue;
@@ -252,6 +260,9 @@ public class MainLab extends Laboratory
 				g.add(e);
 			}
 		}
+		System.out.print(".");
+		
+		System.out.println();
 
 		// Stats
 		add(new LabStats(this));
@@ -271,26 +282,27 @@ public class MainLab extends Laboratory
 	 * @param g_d If not null, the group to which the domain experiments are
 	 * to be added
 	 */
-	protected void setupQueueDomain(Region r, Group g_q, Group g_d)
+	protected void setupQueueDomain(Region r, ExperimentGroup g_q, ExperimentGroup g_d)
 	{
-		String query = r.getString(QUERY);
+		Point p = r.asPoint();
+		String query = p.getString(QUERY);
 		{
 			// Varying queue size
-			String latex_query = LatexNamer.latexify(query);
+			String latex_query = latexify(query);
 			boolean added = false;
 			Region d_r = r.set(DOMAIN_SIZE, 4);
 			for (Region t_r : d_r.all(DOMAIN_SIZE))
 			{
-				String latex_params = LatexNamer.latexify("D" + t_r.getInt(DOMAIN_SIZE));
+				String latex_params = latexify("D" + p.getInt(DOMAIN_SIZE));
 				ExperimentTable et_time = new ExperimentTable(PROPERTY, QUEUE_SIZE, TIME);
-				et_time.setTitle("Running time by queue size for " + query + " (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
+				et_time.setTitle("Running time by queue size for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ")");
 				et_time.setShowInList(false);
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
-				et_mem.setTitle("Memory consumption by queue size for " + query + " (domain = " + t_r.getInt(DOMAIN_SIZE) + ")");
+				et_mem.setTitle("Memory consumption by queue size for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ")");
 				et_mem.setShowInList(false);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, QUEUE_SIZE))
 				{
-					NuSMVExperiment e = m_factory.get(t_q);
+					NuSMVExperiment e = m_factory.get(p);
 					if (e == null)
 					{
 						continue;
@@ -306,17 +318,11 @@ public class MainLab extends Laboratory
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 				tt_time.setTitle(et_time.getTitle());
 				tt_time.setNickname("tTimeQueue" + latex_query + latex_params);
-				Scatterplot plot_time = new Scatterplot(tt_time);
-				plot_time.setTitle(tt_time.getTitle());
-				plot_time.setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Time (ms)");
-				plot_time.setNickname("p" + tt_time.getNickname());
+				Plot plot_time = add(new Plot(tt_time, new GnuplotScatterplot().setTitle(tt_time.getTitle()).setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Time (ms)")).setNickname("p" + tt_time.getNickname()));
 				TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
-				Scatterplot plot_mem = new Scatterplot(tt_mem);
-				plot_mem.setTitle(tt_mem.getTitle());
-				plot_mem.setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Memory (B)");
-				plot_mem.setNickname("p" + tt_mem.getNickname());				
+				Plot plot_mem = add(new Plot(tt_mem, new GnuplotScatterplot().setTitle(tt_mem.getTitle()).setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Memory (B)")).setNickname("p" + tt_mem.getNickname()));
 				if (added)
 				{
 					add(et_time, tt_time, et_mem, tt_mem);
@@ -326,21 +332,22 @@ public class MainLab extends Laboratory
 		}
 		{
 			// Varying domain size
-			String latex_query = LatexNamer.latexify(query);
+			String latex_query = latexify(query);
 			Region q_r = r.set(QUEUE_SIZE, 3);
 			for (Region t_r : q_r.all(QUEUE_SIZE))
 			{
+				Point t_r_p = t_r.asPoint();
 				boolean added = false;
-				String latex_params = LatexNamer.latexify("Q" + t_r.getInt(QUEUE_SIZE));
+				String latex_params = latexify("Q" + t_r_p.getInt(QUEUE_SIZE));
 				ExperimentTable et_time = new ExperimentTable(PROPERTY, DOMAIN_SIZE, TIME);
-				et_time.setTitle("Running time by domain size for " + query + " (queues = " + t_r.getInt(QUEUE_SIZE) + ")");
+				et_time.setTitle("Running time by domain size for " + query + " (queues = " + t_r_p.getInt(QUEUE_SIZE) + ")");
 				et_time.setShowInList(false);
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, DOMAIN_SIZE, MEMORY);
-				et_mem.setTitle("Memory consumption by domain size for " + query + " (queues = " + t_r.getInt(QUEUE_SIZE) + ")");
+				et_mem.setTitle("Memory consumption by domain size for " + query + " (queues = " + t_r_p.getInt(QUEUE_SIZE) + ")");
 				et_mem.setShowInList(false);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, DOMAIN_SIZE))
 				{
-					NuSMVExperiment e = m_factory.get(t_q);
+					NuSMVExperiment e = m_factory.get(t_q.asPoint());
 					if (e == null)
 					{
 						continue;
@@ -356,17 +363,11 @@ public class MainLab extends Laboratory
 				TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 				tt_time.setTitle(et_time.getTitle());
 				tt_time.setNickname("tTimeQueue" + latex_query + latex_params);
-				Scatterplot plot_time = new Scatterplot(tt_time);
-				plot_time.setTitle(tt_time.getTitle());
-				plot_time.setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Time (ms)");
-				plot_time.setNickname("p" + tt_time.getNickname());
+				Plot plot_time = new Plot(tt_time, new GnuplotScatterplot().setTitle(tt_time.getTitle()).setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Time (ms)")).setNickname("p" + tt_time.getNickname());
 				TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
-				Scatterplot plot_mem = new Scatterplot(tt_mem);
-				plot_mem.setTitle(tt_mem.getTitle());
-				plot_mem.setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Memory (B)");
-				plot_mem.setNickname("p" + tt_mem.getNickname());
+				Plot plot_mem = new Plot(tt_mem, new GnuplotScatterplot().setTitle(tt_mem.getTitle()).setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Memory (B)")).setNickname("p" + tt_mem.getNickname());
 				if (added)
 				{
 					add(et_time, tt_time, et_mem, tt_mem);
@@ -385,23 +386,24 @@ public class MainLab extends Laboratory
 	 * values for K.
 	 * @param g If not null, the group to which the experiments are to be added
 	 */
-	protected void setupK(Region r, Group g)
+	protected void setupK(Region r, ExperimentGroup g)
 	{
-		String query = r.getString(QUERY);
+		Point p = r.asPoint();
+		String query = p.getString(QUERY);
 		{
 			// Varying K
 			boolean added = false;
-			String latex_query = LatexNamer.latexify(query);
-			String latex_params = LatexNamer.latexify("D" + r.getInt(DOMAIN_SIZE) + "Q" + r.getInt(QUEUE_SIZE));
+			String latex_query = latexify(query);
+			String latex_params = latexify("D" + p.getInt(DOMAIN_SIZE) + "Q" + p.getInt(QUEUE_SIZE));
 			ExperimentTable et_time = new ExperimentTable(PROPERTY, QUEUE_SIZE, TIME);
-			et_time.setTitle("Running time by value of k for " + query + " (domain = " + r.getInt(DOMAIN_SIZE) + ", queues = " + r.getInt(QUEUE_SIZE) + ")");
-			et_time.setShowInList(false);
+			et_time.setTitle("Running time by value of k for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ", queues = " + p.getInt(QUEUE_SIZE) + ")");
+			//et_time.setShowInList(false);
 			ExperimentTable et_mem = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
-			et_mem.setTitle("Memory consumption by value of k for " + query + " (domain = " + r.getInt(DOMAIN_SIZE) + ", queues = " + r.getInt(QUEUE_SIZE) + ")");
-			et_mem.setShowInList(false);
+			et_mem.setTitle("Memory consumption by value of k for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ", queues = " + p.getInt(QUEUE_SIZE) + ")");
+			//et_mem.setShowInList(false);
 			for (Region t_q : r.all(QUERY, PROPERTY, K))
 			{
-				NuSMVExperiment e = m_factory.get(t_q);
+				NuSMVExperiment e = m_factory.get(p);
 				if (e == null)
 				{
 					continue;
@@ -417,17 +419,11 @@ public class MainLab extends Laboratory
 			TransformedTable tt_time = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et_time);
 			tt_time.setTitle(et_time.getTitle());
 			tt_time.setNickname("tTimeK" + latex_query + latex_params);
-			Scatterplot plot_time = new Scatterplot(tt_time);
-			plot_time.setTitle(tt_time.getTitle());
-			plot_time.setCaption(Axis.X, "K").setCaption(Axis.Y, "Time (ms)");
-			plot_time.setNickname("p" + tt_time.getNickname());
+			Plot plot_time = add(new Plot(tt_time, new GnuplotScatterplot().setTitle(tt_time.getTitle()).setCaption(Axis.X, "K").setCaption(Axis.Y, "Time (ms)"))).setNickname("p" + tt_time.getNickname());
 			TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
 			tt_mem.setTitle(et_mem.getTitle());
 			tt_mem.setNickname("tmemK" + latex_query + latex_params);
-			Scatterplot plot_mem = new Scatterplot(tt_mem);
-			plot_mem.setTitle(tt_mem.getTitle());
-			plot_mem.setCaption(Axis.X, "K").setCaption(Axis.Y, "Memory (B)");
-			plot_mem.setNickname("p" + tt_mem.getNickname());
+			Plot plot_mem = add(new Plot(tt_mem, new GnuplotScatterplot().setTitle(tt_mem.getTitle()).setCaption(Axis.X, "K").setCaption(Axis.Y, "Memory (B)"))).setNickname("p" + tt_mem.getNickname());
 			if (added)
 			{
 				add(et_time, tt_time, et_mem, tt_mem);
@@ -437,12 +433,12 @@ public class MainLab extends Laboratory
 	}
 
 	@Override
-	public void setupCallbacks(List<WebCallback> callbacks)
+	public void setupCallbacks(LabPalServer server, List<LaboratoryCallback> callbacks)
 	{
-		callbacks.add(new ModelPageCallback(this));
-		callbacks.add(new ModelDownloadCallback(this));
-		callbacks.add(new InnerFileCallback(this));
-		callbacks.add(new AllQueriesCallback(this));
+		callbacks.add(new ModelPageCallback(server));
+		callbacks.add(new ModelDownloadCallback(server));
+		callbacks.add(new InnerFileCallback(server));
+		callbacks.add(new AllQueriesCallback(server));
 	}
 
 	@Override
@@ -450,6 +446,7 @@ public class MainLab extends Laboratory
 	{
 		parser.addArgument(new Argument().withLongName("with-stats").withDescription("Gather stats about state space size (takes much longer)"));
 		parser.addArgument(new Argument().withLongName("use-nusmv").withDescription("Call NuSMV instead of nuXmv"));
+		parser.addArgument(new Argument().withLongName("with-equivalence").withDescription("Add experiments performing implementation comparison"));
 	}
 
 	public static void main(String[] args)

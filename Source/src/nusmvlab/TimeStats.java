@@ -19,13 +19,10 @@ package nusmvlab;
 
 import java.util.Map;
 
-import ca.uqac.lif.json.JsonElement;
-import ca.uqac.lif.json.JsonNumber;
-import ca.uqac.lif.json.JsonString;
-import ca.uqac.lif.labpal.Experiment;
-import ca.uqac.lif.labpal.Experiment.Status;
+import ca.uqac.lif.labpal.experiment.Experiment;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.macro.MacroMap;
+import ca.uqac.lif.labpal.Stateful;
+import ca.uqac.lif.labpal.macro.Macro;
 
 import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -33,7 +30,7 @@ import static nusmvlab.PropertyProvider.PROPERTY;
 /**
  * Computes statistics about NuSMV's running time for the various experiments.
  */
-public class TimeStats extends MacroMap
+public class TimeStats extends Macro
 {
 	/**
 	 * Creates a new instance of the macro.
@@ -48,7 +45,7 @@ public class TimeStats extends MacroMap
 	}
 
 	@Override
-	public void computeValues(Map<String, JsonElement> paramMap)
+	public void computeValues(Map<String, Object> paramMap)
 	{
 		int max_time = 0;
 		String property = "", pipeline = "";
@@ -67,8 +64,46 @@ public class TimeStats extends MacroMap
 				pipeline = ne.readString(QUERY);
 			}
 		}
-		paramMap.put("maxtime", new JsonNumber(max_time));
-		paramMap.put("maxquery", new JsonString(pipeline));
-		paramMap.put("maxproperty", new JsonString(property));
+		paramMap.put("maxtime", max_time);
+		paramMap.put("maxquery", pipeline);
+		paramMap.put("maxproperty", property);
+	}
+
+	@Override
+	public Status getStatus()
+	{
+		return Stateful.getLowestStatus(m_lab.getExperiments());
+	}
+
+	@Override
+	public void reset()
+	{
+		for (Experiment e : m_lab.getExperiments())
+		{
+			e.reset();
+		}
+	}
+
+	@Override
+	public float getProgression()
+	{
+		float t = 0, n = 0;
+		for (Experiment e : m_lab.getExperiments())
+		{
+			t += e.getProgression();
+			n++;
+		}
+		if (n == 0)
+		{
+			return 1;
+		}
+		return t / n;
+	}
+
+	@Override
+	public String getNickname()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

@@ -41,7 +41,7 @@ public abstract class LTLPropertyProvider implements PropertyProvider
 	public void fillExperiment(NuSMVExperiment e) 
 	{
 		e.describe(PROPERTY, "The LTL property that is verified on the model");
-		e.setInput(PROPERTY, m_name);
+		e.writeInput(PROPERTY, m_name);
 	}
 
 	@Override

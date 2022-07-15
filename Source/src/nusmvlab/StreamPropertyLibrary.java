@@ -18,7 +18,7 @@
 package nusmvlab;
 
 import ca.uqac.lif.nusmv4j.ArrayVariable;
-import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.region.Point;
 
 import static nusmvlab.PropertyProvider.PROPERTY;
 
@@ -48,7 +48,7 @@ public class StreamPropertyLibrary implements Library<PropertyProvider>
 	}
 	
 	@Override
-	public PropertyProvider get(Region r)
+	public PropertyProvider get(Point r)
 	{
 		String name = r.getString(PROPERTY);
 		ModelProvider model = m_models.get(r);

@@ -17,7 +17,7 @@
  */
 package nusmvlab;
 
-import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.region.Point;
 
 /**
  * Returns objects based on the contents of a region.
@@ -28,8 +28,8 @@ public interface Library<T>
 {
 	/**
 	 * Gets an object.
-	 * @param r The region, whose parameters determine the object returned
+	 * @param r The point, whose parameters determine the object returned
 	 * @return An object instance or <tt>null</tt>
 	 */
-	/*@ null @*/ public T get(/*@ non_null @*/ Region r);
+	/*@ null @*/ public T get(/*@ non_null @*/ Point r);
 }

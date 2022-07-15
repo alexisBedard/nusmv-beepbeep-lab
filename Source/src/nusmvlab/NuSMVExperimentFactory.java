@@ -17,8 +17,9 @@
  */
 package nusmvlab;
 
-import ca.uqac.lif.labpal.ExperimentFactory;
-import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.experiment.SingleClassExperimentFactory;
+import ca.uqac.lif.labpal.region.Point;
+import ca.uqac.lif.labpal.region.Region;
 
 import static nusmvlab.ModelProvider.GENERATION_TIME;
 
@@ -26,7 +27,7 @@ import static nusmvlab.ModelProvider.GENERATION_TIME;
  * Creates instances of {@link NuSMVExperiment} based on parameters found in
  * a {@link Region}.
  */
-public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExperiment>
+public class NuSMVExperimentFactory extends SingleClassExperimentFactory<NuSMVExperiment>
 {
 	/**
 	 * A library to provide NUSMV models.
@@ -72,18 +73,7 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 	}
 	
 	@Override
-	public NuSMVExperiment get(Region region)
-	{
-		NuSMVExperiment e = super.get(region);
-		if (e != null)
-		{
-			e.tellId(e.getId());
-		}
-		return e;
-	}
-
-	@Override
-	protected NuSMVExperiment createExperiment(Region region)
+	protected NuSMVExperiment createExperiment(Point region)
 	{
 		long start = System.currentTimeMillis();
 		ModelProvider model = m_modelLibrary.get(region);
@@ -94,7 +84,7 @@ public class NuSMVExperimentFactory extends ExperimentFactory<MainLab,NuSMVExper
 			return null;
 		}
 		NuSMVExperiment e = new NuSMVExperiment(model, prop, m_withStats);
-		e.write(GENERATION_TIME, end - start);
+		e.writeOutput(GENERATION_TIME, end - start);
 		return e;
 	}
 }

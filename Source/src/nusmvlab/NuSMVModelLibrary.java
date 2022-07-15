@@ -32,7 +32,8 @@ import ca.uqac.lif.cep.nusmv.TrimModule;
 import ca.uqac.lif.cep.nusmv.TurnIntoModule;
 import ca.uqac.lif.cep.nusmv.UnaryApplyFunctionModule;
 import ca.uqac.lif.cep.nusmv.WindowModule;
-import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.region.Point;
+import ca.uqac.lif.labpal.region.Region;
 import ca.uqac.lif.nusmv4j.BooleanDomain;
 import ca.uqac.lif.nusmv4j.Domain;
 import ca.uqac.lif.nusmv4j.IntegerRange;
@@ -147,22 +148,23 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	}
 
 	@Override
-	public ModelProvider get(Region r)
+	public ModelProvider get(Point p)
 	{
-		String query = r.getString(QUERY);
-		int domain_size = r.getInt(DOMAIN_SIZE);
-		int queue_size = r.getInt(QUEUE_SIZE);
+		String query = p.getString(QUERY);
+		int domain_size = p.getInt(DOMAIN_SIZE);
+		int queue_size = p.getInt(QUEUE_SIZE);
 		Count c = new Count();
 		c.x = -1;
-		if (r.hasDimension(K))
+		Object o_k = p.get(K);
+		if (o_k instanceof Number)
 		{
-			c.x = r.getInt(K);
+			c.x = ((Number) o_k).intValue();
 		}
 		if (query.compareTo(Q_DUMMY) == 0)
 		{
 			return new DummyModelProvider(queue_size, domain_size);
 		}
-		ModelId m = new ModelId(r);
+		ModelId m = new ModelId(p);
 		BeepBeepPipeline start = null;
 		if (m_cache.containsKey(m)) 
 		{
@@ -170,7 +172,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		}
 		else
 		{
-			start = getProcessorChain(r, c);
+			start = getProcessorChain(p, c);
 			m_cache.put(m, start);
 		}
 		if (start == null)
@@ -192,11 +194,11 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 	/**
 	 * Creates a chain of BeepBeep processors, based on a textual name.
 	 * This method is used internally by {@link #getModel(Region, int, int)}. 
-	 * @param r The region corresponding to the chain to create
+	 * @param p The point corresponding to the chain to create
 	 * @param query The name of the chain to create
 	 * @return A reference to the first processor of the chain
 	 */
-	protected static BeepBeepPipeline getProcessorChain(Region r, Count c)
+	protected static BeepBeepPipeline getProcessorChain(Point r, Count c)
 	{
 		String property = r.getString(PROPERTY);
 		int dom_size = r.getInt(DOMAIN_SIZE);
@@ -319,7 +321,7 @@ public class NuSMVModelLibrary implements Library<ModelProvider>
 		public int x = 0;
 	}
 	
-	protected static PipelineCreatorPair getPipelineCreators(Region r, Count c)
+	protected static PipelineCreatorPair getPipelineCreators(Point r, Count c)
 	{
 		String query = r.getString(QUERY);
 		PipelineCreator pc1 = null, pc2 = null;

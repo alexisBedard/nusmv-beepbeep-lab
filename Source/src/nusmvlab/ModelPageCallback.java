@@ -22,27 +22,27 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
-import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.server.TemplatePageCallback;
+import ca.uqac.lif.labpal.server.BlankPageCallback;
+import ca.uqac.lif.labpal.server.LabPalServer;
 
 /**
  * Page added to the lab's web interface that displays the NuSMV input file
  * generated for a specific experiment.
  */
-public class ModelPageCallback extends TemplatePageCallback
+public class ModelPageCallback extends BlankPageCallback
 {
 	/**
 	 * Creates a new instance of the callback.
 	 * @param lab The lab where this callback will be added
 	 */
-	public ModelPageCallback(Laboratory lab)
+	public ModelPageCallback(LabPalServer server)
 	{
-		super("/view-model", lab, null);
-		m_filename = "resource/index.html";
+		super(server, Method.GET, "/view-model");
+		setTitle("NuSMV model");
 	}
 	
 	@Override
-	public String fill(String s, Map<String, String> params, boolean is_offline)
+	public String getCustomContent(Map<String, String> params)
 	{ 
 		StringBuilder contents = new StringBuilder();
 		if (!params.containsKey("id"))
@@ -52,7 +52,7 @@ public class ModelPageCallback extends TemplatePageCallback
 		else
 		{
 			int exp_id = Integer.parseInt(params.get("id").trim());
-			NuSMVExperiment exp = (NuSMVExperiment) m_lab.getExperiment(exp_id);
+			NuSMVExperiment exp = (NuSMVExperiment) getServer().getLaboratory().getExperiment(exp_id);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			PrintStream ps = new PrintStream(baos);
 			try
@@ -66,9 +66,7 @@ public class ModelPageCallback extends TemplatePageCallback
 				contents.append("<p>The model cannot be printed.</p>\n");
 			}
 		}
-		s = s.replace("{%TITLE%}", "NuSMV model");
-		s = s.replace("{%LAB_DESCRIPTION%}", contents.toString());
-		return s;
+		return contents.toString();
 	}
 	
 	protected static String highlightSMV(String s)

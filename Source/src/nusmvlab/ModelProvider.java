@@ -91,11 +91,11 @@ public abstract class ModelProvider implements NuSMVProvider
 	public void fillExperiment(/*@ non_null @*/ NuSMVExperiment e)
 	{
 		e.describe(QUERY, "The chain of processors under study");
-		e.setInput(QUERY, m_name);
+		e.writeInput(QUERY, m_name);
 		e.describe(QUEUE_SIZE, "The size of the queues in the generated SMV model");
-		e.setInput(QUEUE_SIZE, m_queueSize);
+		e.writeInput(QUEUE_SIZE, m_queueSize);
 		e.describe(DOMAIN_SIZE, "The cardinality of the domains in the generated SMV model");
-		e.setInput(DOMAIN_SIZE, m_domainSize);
+		e.writeInput(DOMAIN_SIZE, m_domainSize);
 		e.describe(GENERATION_TIME, "Time (in ms) taken to generate the SMV model");
 		e.describe(NUM_MODULES, "The number of distinct modules in the SMV model");
 		e.describe(NUM_VARIABLES, "The number of distinct variables in the SMV model");

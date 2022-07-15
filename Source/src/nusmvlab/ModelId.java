@@ -23,7 +23,7 @@ import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.PropertyProvider.PROPERTY;
 
-import ca.uqac.lif.labpal.Region;
+import ca.uqac.lif.labpal.region.Point;
 
 public class ModelId
 	{
@@ -47,14 +47,14 @@ public class ModelId
 			m_k = e.readInt(K);
 		}
 		
-		public ModelId(Region r)
+		public ModelId(Point p)
 		{
 			super();
-			m_name = r.getString(QUERY);
-			m_queueSize = r.getInt(QUEUE_SIZE);
-			m_domainSize = r.getInt(DOMAIN_SIZE);
-			m_property = r.getString(PROPERTY);
-			m_k = r.getInt(K);
+			m_name = p.getString(QUERY);
+			m_queueSize = p.getInt(QUEUE_SIZE);
+			m_domainSize = p.getInt(DOMAIN_SIZE);
+			m_property = p.getString(PROPERTY);
+			m_k = p.getInt(K);
 		}
 		
 		@Override

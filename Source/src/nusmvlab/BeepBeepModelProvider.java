@@ -104,7 +104,7 @@ public class BeepBeepModelProvider extends ModelProvider
 		m_pipeline = start;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrettyPrintStream ps = new PrettyPrintStream(baos);
-		System.out.println(name);
+		//System.out.println(name);
 		m_pipeline.print(ps);
 		m_fileContents = baos.toString();
 		m_modules = start.getModules();
@@ -121,15 +121,15 @@ public class BeepBeepModelProvider extends ModelProvider
 	public void fillExperiment(NuSMVExperiment e)
 	{
 		super.fillExperiment(e);
-		e.write(NUM_MODULES, m_modules.size());
-		e.write(GENERATION_TIME, m_generationTime);
-		e.write(NUM_VARIABLES, countVariables());
+		e.writeOutput(NUM_MODULES, m_modules.size());
+		e.writeOutput(GENERATION_TIME, m_generationTime);
+		e.writeOutput(NUM_VARIABLES, countVariables());
 		e.describe(QUEUE_VARIABLES, "The number of variables in the model corresponding to queues");
-		e.write(QUEUE_VARIABLES, getQueueVariables().size());
+		e.writeOutput(QUEUE_VARIABLES, getQueueVariables().size());
 		if (m_parameter > 0)
 		{
 			e.describe(K, "The value of parameter k in the processor chain");
-			e.setInput(K, m_parameter);
+			e.writeInput(K, m_parameter);
 		}
 	}
 

@@ -41,7 +41,7 @@ public abstract class CTLPropertyProvider implements PropertyProvider
 	public void fillExperiment(NuSMVExperiment e) 
 	{
 		e.describe(PROPERTY, "The CTL property that is verified on the model");
-		e.setInput(PROPERTY, m_name);
+		e.writeInput(PROPERTY, m_name);
 	}
 
 	@Override

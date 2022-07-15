@@ -24,10 +24,10 @@ import java.io.PrintStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ca.uqac.lif.labpal.CommandRunner;
-import ca.uqac.lif.labpal.Experiment;
-import ca.uqac.lif.labpal.ExperimentException;
-import ca.uqac.lif.labpal.FileHelper;
+import ca.uqac.lif.labpal.experiment.Experiment;
+import ca.uqac.lif.labpal.experiment.ExperimentException;
+import ca.uqac.lif.labpal.util.CommandRunner;
+import ca.uqac.lif.labpal.util.FileHelper;
 import nusmvlab.PropertyProvider.Logic;
 
 /**
@@ -210,7 +210,7 @@ public class NuSMVExperiment extends Experiment
 		String output = runNuSMV(model, getSourceCheckFilename());
 		long end_time = System.currentTimeMillis();
 		parseCheckResults(output);
-		write(TIME, end_time - start_time);
+		writeOutput(TIME, end_time - start_time);
 		if (m_withStats)
 		{
 			output = runNuSMV(model, getSourceStatsFilename());
@@ -275,11 +275,11 @@ public class NuSMVExperiment extends Experiment
 	{
 		if (output.contains("is false"))
 		{
-			write(VERDICT, "False");
+			writeOutput(VERDICT, "False");
 		}
 		if (output.contains("is true"))
 		{
-			write(VERDICT, "True");
+			writeOutput(VERDICT, "True");
 		}
 		int w_len = 0;
 		Matcher mat = s_witnessPattern.matcher(output);
@@ -287,7 +287,7 @@ public class NuSMVExperiment extends Experiment
 		{
 			w_len++;
 		}
-		write(WITNESS_LENGTH, w_len);
+		writeOutput(WITNESS_LENGTH, w_len);
 	}
 
 	/**
@@ -298,12 +298,12 @@ public class NuSMVExperiment extends Experiment
 	 */
 	protected void parseStatsResults(String output)
 	{
-		write(MEMORY, readIntFromOutput(output, s_memoryPattern));
-		write(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
-		write(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
-		write(SYSTEM_DIAMETER, readIntFromOutput(output, s_diameterPattern));
-		write(TOTAL_STATES, readFloatFromOutput(output, s_totalStatesPattern));
-		write(REACHABLE_STATES, readFloatFromOutput(output, s_reachableStatesPattern));
+		writeOutput(MEMORY, readIntFromOutput(output, s_memoryPattern));
+		writeOutput(TOTAL_NODES, readIntFromOutput(output, s_totalNodesPattern));
+		writeOutput(LIVE_NODES, readIntFromOutput(output, s_liveNodesPattern));
+		writeOutput(SYSTEM_DIAMETER, readIntFromOutput(output, s_diameterPattern));
+		writeOutput(TOTAL_STATES, readFloatFromOutput(output, s_totalStatesPattern));
+		writeOutput(REACHABLE_STATES, readFloatFromOutput(output, s_reachableStatesPattern));
 	}
 
 	/**
@@ -339,21 +339,10 @@ public class NuSMVExperiment extends Experiment
 	}
 
 	/**
-	 * Called by the factory to notify the experiment that an ID has been
-	 * assigned to it. This method circumvents the fact that an experiment does
-	 * not yet know its ID when its constructor is called.
-	 * @param id The experiment's id
-	 */
-	public void tellId(int id)
-	{
-		writeDescription(id);
-	}
-
-	/**
 	 * Prepares the description text to be added to each experiment.
 	 * @param id The experiment's id
 	 */
-	protected void writeDescription(int id)
+	public String getDescription()
 	{
 		StringBuilder out = new StringBuilder();
 		out.append("<p>Experiment that turns a BeepBeep chain of processors into a NuSMV model, and verifies a CTL or LTL property on this model.</p>\n");
@@ -362,7 +351,7 @@ public class NuSMVExperiment extends Experiment
 		{
 			out.append("<img src=\"" + image_url + "\" alt=\"Processor chain\" />\n");
 		}
-		out.append("<p><a href=\"/view-model?id=" + id + "\">View the SMV model file</a></p>");
+		out.append("<p><a href=\"/view-model?id=" + getId() + "\">View the SMV model file</a></p>");
 		out.append("<p>The property to evaluate is:</p>\n");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
@@ -375,7 +364,7 @@ public class NuSMVExperiment extends Experiment
 			// Do nothing in such a case
 		}
 		out.append("<blockquote>").append(baos.toString()).append("</blockquote>\n");
-		setDescription(out.toString());
+		return out.toString();
 	}
 
 	/**
