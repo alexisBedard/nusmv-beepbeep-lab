@@ -241,7 +241,7 @@ public class MainLab extends Laboratory
 					extension(PROPERTY, OutputAlwaysTrue.NAME, OutputsAlwaysEqual.NAME),
 					extension(QUEUE_SIZE, 2),
 					extension(DOMAIN_SIZE, 2),
-					range(K, 2, 5));
+					extension(K, 3));
 			ExperimentTable et = new ExperimentTable(QUERY, PROPERTY, TIME);
 			et.setShowInList(false);
 			TransformedTable tt = new TransformedTable(new ExpandAsColumns(PROPERTY, TIME), et);
