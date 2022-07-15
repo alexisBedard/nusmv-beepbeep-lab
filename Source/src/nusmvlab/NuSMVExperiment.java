@@ -387,7 +387,7 @@ public class NuSMVExperiment extends Experiment
 		}
 		else
 		{
-			String model_filename = TMP_DIR + FILE_SEPARATOR + "model.smv";
+			String model_filename = TMP_DIR + FILE_SEPARATOR + "model-" + getId() + ".smv";
 			FileHelper.writeFromString(new File(model_filename), model);
 			return new CommandRunner(new String[] {NUSMV_PATH, "-source", source_filename, model_filename});
 		}

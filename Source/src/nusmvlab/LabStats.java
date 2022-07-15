@@ -1,6 +1,6 @@
 /*
   A benchmark for NuSMV extensions to BeepBeep 3
-  Copyright (C) 2021 Alexis Bédard and Sylvain Hallé
+  Copyright (C) 2021-2022 Alexis Bédard and Sylvain Hallé
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,23 +17,20 @@
  */
 package nusmvlab;
 
-import java.util.Map;
-
 import ca.uqac.lif.json.JsonMap;
 import ca.uqac.lif.json.JsonParser;
 import ca.uqac.lif.json.JsonParser.JsonParseException;
 import ca.uqac.lif.json.JsonString;
-import ca.uqac.lif.labpal.Stateful;
 import ca.uqac.lif.labpal.util.FileHelper;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.experiment.Experiment;
-import ca.uqac.lif.labpal.macro.Macro;
+import ca.uqac.lif.labpal.macro.ConstantMacro;
+import ca.uqac.lif.labpal.macro.MacroGroup;
 
 /**
  * Computes various static parameters about the environment in which the
  * lab is executed.
  */
-public class LabStats extends Macro
+public class LabStats extends MacroGroup
 {
 	protected transient JsonMap m_fileContents;
 
@@ -43,9 +40,10 @@ public class LabStats extends Macro
 	 */
 	public LabStats(Laboratory lab)
 	{
-		super(lab);
+		super("Lab settings");
+		m_description = "Information about the environment where the lab is running";
 		m_fileContents = null;
-		String host = m_lab.getHostName();
+		String host = lab.getHostName();
 		JsonParser parser = new JsonParser();
 		try 
 		{
@@ -59,21 +57,11 @@ public class LabStats extends Macro
 		{
 			// Do nothing
 		}
-		add("machinestring", "Basic info about the machine running the lab");
-		add("machineram", "Total memory in the machine running the lab");
-		add("jvmram", "RAM available to the JVM");
-		add("numexperiments", "The number of experiments in the lab");
-		add("numdatapoints", "The number of data points in the lab");
-	}
-
-	@Override
-	public void computeValues(Map<String,Object> map)
-	{
-		map.put("machinestring", getMachineString());
-		map.put("machineram", getMachineRam());
-		map.put("jvmram", getMemory());
-		map.put("numexperiments", m_lab.getExperiments().size());
-		map.put("numdatapoints", m_lab.countDataPoints());
+		add(new ConstantMacro(lab, "Machine name", "machinestring", "Basic info about the machine running the lab", getMachineString()));
+		add(new ConstantMacro(lab, "Machine RAM", "machineram", "Total memory in the machine running the lab", getMachineRam()));
+		add(new ConstantMacro(lab, "JVM RAM", "jvmram", "RAM available to the JVM", getMemory()));
+		add(new ConstantMacro(lab, "Number of experiments", "numexperiments", "The number of experiments in the lab", getMemory()));
+		add(new ConstantMacro(lab, "Number of data points", "numdatapoints", "The number of data points in the lab", getMemory()));
 	}
 
 	protected String getMemory()
@@ -100,42 +88,5 @@ public class LabStats extends Macro
 			return "";
 		}
 		return ((JsonString) m_fileContents.get("RAM")).stringValue(); 
-	}
-
-	@Override
-	public Status getStatus()
-	{
-		return Stateful.getLowestStatus(m_lab.getExperiments());
-	}
-
-	@Override
-	public void reset()
-	{
-		for (Experiment e : m_lab.getExperiments())
-		{
-			e.reset();
-		}
-	}
-
-	@Override
-	public float getProgression()
-	{
-		float t = 0, n = 0;
-		for (Experiment e : m_lab.getExperiments())
-		{
-			t += e.getProgression();
-			n++;
-		}
-		if (n == 0)
-		{
-			return 1;
-		}
-		return t / n;
-	}
-
-	@Override
-	public String getNickname()
-	{
-		return "";
 	}
 }

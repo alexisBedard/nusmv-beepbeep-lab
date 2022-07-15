@@ -18,13 +18,13 @@
 package nusmvlab;
 
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import ca.uqac.lif.labpal.experiment.Experiment;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.Stateful;
-import ca.uqac.lif.labpal.macro.Macro;
+import ca.uqac.lif.labpal.macro.ExperimentMacro;
+import ca.uqac.lif.labpal.macro.MacroGroup;
 
 import static nusmvlab.ModelProvider.DOMAIN_SIZE;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
@@ -32,7 +32,7 @@ import static nusmvlab.ModelProvider.QUEUE_SIZE;
 /**
  * Computes statistics about the NuSMV models included in the lab.
  */
-public class ModelStats extends Macro
+public class ModelStats extends MacroGroup
 {
 	/**
 	 * Creates a new instance of the macro.
@@ -40,74 +40,158 @@ public class ModelStats extends Macro
 	 */
 	public ModelStats(Laboratory lab)
 	{
-		super(lab);
-		add("minprocessors", "The minimum number of processors in the chains considered in the lab");
-		add("maxprocessors", "The maximum number of processors in the chains considered in the lab");
-		add("maxvariables", "The maximum number of NuSMV variables in all chains considered in the lab");
-		add("maxmodules", "The maximum number of distinct NuSMV modules in all chains considered in the lab");
-		add("maxqueuesize", "The maximum size of the queues in all NuSMV models considered in the lab");
-		add("nummodels", "The number of distinct NuSMV models considered in the lab");
+		super("Model statistics");
+		m_description = "Statistics about the NuSMV models included in the lab";
+		add(new MinProcessors(lab, "Minimum processors", "minprocessors", "The minimum number of processors in the chains considered in the lab", lab.getExperiments()));
+		add(new MaxProcessors(lab, "Maximum processors", "maxprocessors", "The maximum number of processors in the chains considered in the lab", lab.getExperiments()));
+		add(new MaxVariables(lab, "Maximum variables", "maxvariables", "The maximum number of NuSMV variables in all chains considered in the lab", lab.getExperiments()));
+		add(new MaxModules(lab, "Maximum modules", "maxmodules", "The maximum number of distinct NuSMV modules in all chains considered in the lab", lab.getExperiments()));
+		add(new MaxQueueSize(lab, "Maximum queue size", "maxqueuesize", "The maximum size of the queues in all NuSMV models considered in the lab", lab.getExperiments()));
+		add(new NumModels(lab, "Number of models", "nummodels", "The number of distinct NuSMV models considered in the lab", lab.getExperiments()));
 	}
-
-	@Override
-	public void computeValues(Map<String,Object> paramMap)
+	
+	protected abstract class ModelMacro extends ExperimentMacro
 	{
-		int min_procs = 1000, max_procs = 0, max_vars = 0, max_modules = 0, max_queue = 0, max_domain = 0;
-		Set<ModelId> ids = new HashSet<ModelId>();
-		for (Experiment e : m_lab.getExperiments())
+		protected int m_value;
+		
+		boolean m_done;
+		
+		public ModelMacro(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
 		{
-			if (!(e instanceof NuSMVExperiment))
-			{
-				continue;
-			}
-			NuSMVExperiment ne = (NuSMVExperiment) e;
-			ModelProvider mp = ne.getModelProvider();
-			ids.add(new ModelId(ne));
-			if (mp instanceof BeepBeepModelProvider)
-			{
-				BeepBeepModelProvider bmp = (BeepBeepModelProvider) mp;
-				max_vars = Math.max(max_vars, bmp.countVariables());
-				max_modules = Math.max(max_modules, bmp.getModules().size());
-				int num_procs = bmp.getNumProcessors();
-				min_procs = Math.min(min_procs, num_procs);
-				max_procs = Math.max(max_procs, num_procs);
-				max_queue = Math.max(max_queue, ne.readInt(QUEUE_SIZE));
-				max_domain = Math.max(max_domain, ne.readInt(DOMAIN_SIZE));
-			}
+			super(lab, name, nickname);
+			add(experiments);
+			m_description = description;
+			m_value = 0;
+			m_done = false;
 		}
-		paramMap.put("minprocessors", min_procs);
-		paramMap.put("maxprocessors", max_procs);
-		paramMap.put("maxmodules", max_modules);
-		paramMap.put("maxvariables", max_vars);
-		paramMap.put("maxqueuesize", max_queue);
-		paramMap.put("maxdomainsize", max_domain);
-		paramMap.put("nummodels", ids.size());
-	}
-
-	@Override
-	public Status getStatus()
-	{
-		return Stateful.Status.DONE;
-	}
-
-	@Override
-	public void reset()
-	{
-		for (Experiment e : m_lab.getExperiments())
+		
+		@Override
+		public Object getValue(Set<Experiment> experiments)
 		{
-			e.reset();
+			if (m_done)
+			{
+				return m_value;
+			}
+			Set<ModelId> ids = new HashSet<ModelId>();
+			for (Experiment e : experiments)
+			{
+				if (!(e instanceof NuSMVExperiment))
+				{
+					continue;
+				}
+				NuSMVExperiment ne = (NuSMVExperiment) e;
+				ModelProvider mp = ne.getModelProvider();
+				ids.add(new ModelId(ne));
+				if (mp instanceof BeepBeepModelProvider)
+				{
+					BeepBeepModelProvider bmp = (BeepBeepModelProvider) mp;
+					aggregate(ne, bmp);
+				}
+			}
+			m_done = true;
+			return m_value;
+		}
+		
+		protected abstract void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp);
+		
+	}
+	
+	protected class MaxVariables extends ModelMacro
+	{
+		public MaxVariables(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.max(m_value, bmp.countVariables());
 		}
 	}
-
-	@Override
-	public float getProgression()
+	
+	protected class MaxProcessors extends ModelMacro
 	{
-		return 1;
+		public MaxProcessors(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.max(m_value, bmp.getNumProcessors());
+		}
 	}
-
-	@Override
-	public String getNickname()
+	
+	protected class MinProcessors extends ModelMacro
 	{
-		return "";
+		public MinProcessors(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+			m_value = 10000;
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.min(m_value, bmp.getNumProcessors());
+		}
+	}
+	
+	protected class MaxQueueSize extends ModelMacro
+	{
+		public MaxQueueSize(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.max(m_value, ne.readInt(QUEUE_SIZE));
+		}
+	}
+	
+	protected class MaxDomainSize extends ModelMacro
+	{
+		public MaxDomainSize(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.max(m_value, ne.readInt(DOMAIN_SIZE));
+		}
+	}
+	
+	protected class MaxModules extends ModelMacro
+	{
+		public MaxModules(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value = Math.max(m_value, bmp.getModules().size());
+		}
+	}
+	
+	protected class NumModels extends ModelMacro
+	{
+		public NumModels(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname, description, experiments);
+		}
+
+		@Override
+		protected void aggregate(NuSMVExperiment ne, BeepBeepModelProvider bmp)
+		{
+			m_value++;
+		}
 	}
 }

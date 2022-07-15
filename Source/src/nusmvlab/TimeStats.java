@@ -17,12 +17,13 @@
  */
 package nusmvlab;
 
-import java.util.Map;
+import java.util.List;
+import java.util.Set;
 
 import ca.uqac.lif.labpal.experiment.Experiment;
 import ca.uqac.lif.labpal.Laboratory;
-import ca.uqac.lif.labpal.Stateful;
-import ca.uqac.lif.labpal.macro.Macro;
+import ca.uqac.lif.labpal.macro.ExperimentMacro;
+import ca.uqac.lif.labpal.macro.MacroGroup;
 
 import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.PropertyProvider.PROPERTY;
@@ -30,7 +31,7 @@ import static nusmvlab.PropertyProvider.PROPERTY;
 /**
  * Computes statistics about NuSMV's running time for the various experiments.
  */
-public class TimeStats extends Macro
+public class TimeStats extends MacroGroup
 {
 	/**
 	 * Creates a new instance of the macro.
@@ -38,72 +39,104 @@ public class TimeStats extends Macro
 	 */
 	public TimeStats(Laboratory lab)
 	{
-		super(lab);
-		add("maxtime", "The maximum time taken by NuSMV to verify a model");
-		add("maxquery", "The pipeline for which the maximum execution time has been observed");
-		add("maxproperty", "The property for which the maximum execution time has been observed");
+		super("Time statistics");
+		m_description = "Statistics about verification time";
+		add(new MaxTime(lab, "Maximum running time", "maxtime", "The maximum time taken by NuSMV to verify a model", lab.getExperiments()));
+		add(new MaxPipeline(lab, "Pipeline with maximum running time", "maxquery", "The pipeline for which the maximum execution time has been observed", lab.getExperiments()));
+		add(new MaxProperty(lab, "Property with maximum running time", "maxproperty", "The property for which the maximum execution time has been observed", lab.getExperiments()));
 	}
-
-	@Override
-	public void computeValues(Map<String, Object> paramMap)
+	
+	protected class MaxTime extends ExperimentMacro
 	{
-		int max_time = 0;
-		String property = "", pipeline = "";
-		for (Experiment e : m_lab.getExperiments())
+		public MaxTime(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
 		{
-			if (!(e instanceof NuSMVExperiment) || e.getStatus() != Status.DONE)
+			super(lab, name, nickname);
+			add(experiments);
+			m_description = description;
+		}
+		
+		@Override
+		public Object getValue(Set<Experiment> experiments)
+		{
+			int max_time = 0;
+			for (Experiment e : m_lab.getExperiments())
 			{
-				continue;
+				if (!(e instanceof NuSMVExperiment) || e.getStatus() != Status.DONE)
+				{
+					continue;
+				}
+				NuSMVExperiment ne = (NuSMVExperiment) e;
+				int time = ne.readInt(NuSMVExperiment.TIME);
+				if (time > max_time)
+				{
+					max_time = time;
+				}
 			}
-			NuSMVExperiment ne = (NuSMVExperiment) e;
-			int time = ne.readInt(NuSMVExperiment.TIME);
-			if (time > max_time)
+			return max_time;
+		}
+	}
+	
+	protected class MaxPipeline extends ExperimentMacro
+	{
+		public MaxPipeline(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
+		{
+			super(lab, name, nickname);
+			add(experiments);
+			m_description = description;
+		}
+		
+		@Override
+		public Object getValue(Set<Experiment> experiments)
+		{
+			int max_time = 0;
+			String pipeline = "";
+			for (Experiment e : m_lab.getExperiments())
 			{
-				max_time = time;
-				property = ne.readString(PROPERTY);
-				pipeline = ne.readString(QUERY);
+				if (!(e instanceof NuSMVExperiment) || e.getStatus() != Status.DONE)
+				{
+					continue;
+				}
+				NuSMVExperiment ne = (NuSMVExperiment) e;
+				int time = ne.readInt(NuSMVExperiment.TIME);
+				if (time > max_time)
+				{
+					max_time = time;
+					pipeline = ne.readString(QUERY);
+				}
 			}
+			return pipeline;
 		}
-		paramMap.put("maxtime", max_time);
-		paramMap.put("maxquery", pipeline);
-		paramMap.put("maxproperty", property);
 	}
 
-	@Override
-	public Status getStatus()
+	protected class MaxProperty extends ExperimentMacro
 	{
-		return Stateful.getLowestStatus(m_lab.getExperiments());
-	}
-
-	@Override
-	public void reset()
-	{
-		for (Experiment e : m_lab.getExperiments())
+		public MaxProperty(Laboratory lab, String name, String nickname, String description, List<Experiment> experiments)
 		{
-			e.reset();
+			super(lab, name, nickname);
+			add(experiments);
+			m_description = description;
 		}
-	}
-
-	@Override
-	public float getProgression()
-	{
-		float t = 0, n = 0;
-		for (Experiment e : m_lab.getExperiments())
+		
+		@Override
+		public Object getValue(Set<Experiment> experiments)
 		{
-			t += e.getProgression();
-			n++;
+			int max_time = 0;
+			String property = "";
+			for (Experiment e : m_lab.getExperiments())
+			{
+				if (!(e instanceof NuSMVExperiment) || e.getStatus() != Status.DONE)
+				{
+					continue;
+				}
+				NuSMVExperiment ne = (NuSMVExperiment) e;
+				int time = ne.readInt(NuSMVExperiment.TIME);
+				if (time > max_time)
+				{
+					max_time = time;
+					property = ne.readString(PROPERTY);
+				}
+			}
+			return property;
 		}
-		if (n == 0)
-		{
-			return 1;
-		}
-		return t / n;
-	}
-
-	@Override
-	public String getNickname()
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 }
