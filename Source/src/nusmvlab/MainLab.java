@@ -50,6 +50,7 @@ import static nusmvlab.ModelProvider.QUERY;
 import static nusmvlab.ModelProvider.QUEUE_SIZE;
 import static nusmvlab.NuSMVExperiment.MEMORY;
 import static nusmvlab.NuSMVExperiment.TIME;
+import static nusmvlab.NuSMVExperiment.REACHABLE_STATES;
 import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_WINDOW_SUM_2;
 import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_WINDOW_SUM_3;
 import static nusmvlab.NuSMVModelLibrary.Q_COMPARE_PASSTHROUGH_DELAY;
@@ -207,9 +208,11 @@ public class MainLab extends Laboratory
 			Region r = product(
 					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS),
 					extension(PROPERTY, NoFullQueues.NAME, Liveness.NAME, BoundedLiveness.NAME),
-					extension(QUEUE_SIZE, 3),
+					extension(QUEUE_SIZE, 2),
 					extension(DOMAIN_SIZE, 4),
-					range(K, 2, 5));
+					extension(K, 3));
+					//range(K, 2, 5));
+			// Time
 			ExperimentTable et_time = new ExperimentTable(QUERY, PROPERTY, TIME);
 			et_time.setShowInList(false);
 			add(et_time);
@@ -217,7 +220,16 @@ public class MainLab extends Laboratory
 			tt_time.setTitle("Running time by processor chain");
 			tt_time.setNickname("tPropertyTime");
 			add(tt_time);
-			Plot ch = add(new Plot(tt_time, new GnuplotHistogram().setTitle(tt_time.getTitle())).setNickname("pPropertyTime"));
+			Plot ch_time = add(new Plot(tt_time, new GnuplotHistogram().setTitle(tt_time.getTitle())).setNickname("pPropertyTime"));
+			// Memory
+			ExperimentTable et_mem = new ExperimentTable(QUERY, PROPERTY, MEMORY);
+			et_mem.setShowInList(false);
+			add(et_mem);
+			TransformedTable tt_mem = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
+			tt_mem.setTitle("Memory consumption by processor chain");
+			tt_mem.setNickname("tPropertyMemory");
+			add(tt_mem);
+			Plot ch_mem = add(new Plot(tt_mem, new GnuplotHistogram().setTitle(tt_mem.getTitle())).setNickname("pPropertyMem"));
 			for (Region q_r : r.all(QUERY, PROPERTY))
 			{
 				NuSMVExperiment e = m_factory.get(q_r.asPoint());
@@ -226,6 +238,36 @@ public class MainLab extends Laboratory
 					continue;
 				}
 				et_time.add(e);
+				et_mem.add(e);
+				g.add(e);
+			}
+		}
+		// Comparison of processor chains on all properties, for a fixed queue size and domain size
+		{
+			ExperimentGroup g = new ExperimentGroup("Impact of query", "Comparison of processor chains on all properties, for a fixed queue size and domain size");
+			add(g);
+			Region r = product(
+					extension(QUERY, Q_PASSTHROUGH, Q_PRODUCT_WINDOW_K, Q_SUM_OF_DOUBLES, Q_PRODUCT_1_K, Q_WIN_SUM_OF_1, Q_OUTPUT_IF_SMALLER_K, Q_SUM_OF_ODDS),
+					extension(PROPERTY, NoFullQueues.NAME),
+					extension(QUEUE_SIZE, 3),
+					extension(DOMAIN_SIZE, 4),
+					extension(K, 3));
+			// Reachable states
+			ExperimentTable et_space = new ExperimentTable(QUERY, REACHABLE_STATES);
+			et_space.setShowInList(true);
+			add(et_space);
+			et_space.setTitle("Reachable states by processor chain");
+			et_space.setNickname("tPropertySpace");
+			add(et_space);
+			Plot ch_space = add(new Plot(et_space, new GnuplotHistogram().setTitle(et_space.getTitle())).setNickname("pPropertySpace"));
+			for (Region q_r : r.all(QUERY, PROPERTY))
+			{
+				NuSMVExperiment e = m_factory.get(q_r.asPoint());
+				if (e == null)
+				{
+					continue;
+				}
+				et_space.add(e);
 				g.add(e);
 			}
 		}
@@ -261,7 +303,7 @@ public class MainLab extends Laboratory
 			}
 		}
 		System.out.print(".");
-		
+
 		System.out.println();
 
 		// Stats
@@ -300,9 +342,12 @@ public class MainLab extends Laboratory
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
 				et_mem.setTitle("Memory consumption by queue size for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ")");
 				et_mem.setShowInList(false);
+				ExperimentTable et_space = new ExperimentTable(PROPERTY, QUEUE_SIZE, MEMORY);
+				et_space.setTitle("Reachable states by queue size for " + query + " (domain = " + p.getInt(DOMAIN_SIZE) + ")");
+				et_space.setShowInList(false);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, QUEUE_SIZE))
 				{
-					NuSMVExperiment e = m_factory.get(p);
+					NuSMVExperiment e = m_factory.get(t_q.asPoint());
 					if (e == null)
 					{
 						continue;
@@ -310,6 +355,7 @@ public class MainLab extends Laboratory
 					added = true;
 					et_time.add(e);
 					et_mem.add(e);
+					et_space.add(e);
 					if (g_q != null)
 					{
 						g_q.add(e);
@@ -323,10 +369,14 @@ public class MainLab extends Laboratory
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
 				Plot plot_mem = add(new Plot(tt_mem, new GnuplotScatterplot().setTitle(tt_mem.getTitle()).setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Memory (B)")).setNickname("p" + tt_mem.getNickname()));
+				TransformedTable tt_space = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_mem);
+				tt_space.setTitle(et_space.getTitle());
+				tt_space.setNickname("tmemQueue" + latex_query + latex_params);
+				Plot plot_space = add(new Plot(tt_space, new GnuplotScatterplot().setTitle(tt_space.getTitle()).setCaption(Axis.X, "Queue size").setCaption(Axis.Y, "Reachable states")).setNickname("p" + tt_space.getNickname()));
 				if (added)
 				{
-					add(et_time, tt_time, et_mem, tt_mem);
-					add(plot_time, plot_mem);
+					add(et_time, tt_time, et_mem, tt_mem, et_space, tt_space);
+					add(plot_time, plot_mem, plot_space);
 				}
 			}
 		}
@@ -345,6 +395,9 @@ public class MainLab extends Laboratory
 				ExperimentTable et_mem = new ExperimentTable(PROPERTY, DOMAIN_SIZE, MEMORY);
 				et_mem.setTitle("Memory consumption by domain size for " + query + " (queues = " + t_r_p.getInt(QUEUE_SIZE) + ")");
 				et_mem.setShowInList(false);
+				ExperimentTable et_space = new ExperimentTable(PROPERTY, DOMAIN_SIZE, MEMORY);
+				et_space.setTitle("Reachable states by domain size for " + query + " (queues = " + t_r_p.getInt(QUEUE_SIZE) + ")");
+				et_space.setShowInList(false);
 				for (Region t_q : t_r.all(QUERY, PROPERTY, DOMAIN_SIZE))
 				{
 					NuSMVExperiment e = m_factory.get(t_q.asPoint());
@@ -355,6 +408,7 @@ public class MainLab extends Laboratory
 					added = true;
 					et_time.add(e);
 					et_mem.add(e);
+					et_space.add(e);
 					if (g_d != null)
 					{
 						g_d.add(e);
@@ -368,10 +422,14 @@ public class MainLab extends Laboratory
 				tt_mem.setTitle(et_mem.getTitle());
 				tt_mem.setNickname("tmemQueue" + latex_query + latex_params);
 				Plot plot_mem = new Plot(tt_mem, new GnuplotScatterplot().setTitle(tt_mem.getTitle()).setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Memory (B)")).setNickname("p" + tt_mem.getNickname());
+				TransformedTable tt_space = new TransformedTable(new ExpandAsColumns(PROPERTY, MEMORY), et_space);
+				tt_space.setTitle(et_space.getTitle());
+				tt_space.setNickname("tmemQueue" + latex_query + latex_params);
+				Plot plot_space = new Plot(tt_space, new GnuplotScatterplot().setTitle(tt_space.getTitle()).setCaption(Axis.X, "Domain size").setCaption(Axis.Y, "Reachable states")).setNickname("p" + tt_space.getNickname());
 				if (added)
 				{
-					add(et_time, tt_time, et_mem, tt_mem);
-					add(plot_time, plot_mem);
+					add(et_time, tt_time, et_mem, tt_mem, et_space, tt_space);
+					add(plot_time, plot_mem, plot_space);
 				}
 			}
 		}
