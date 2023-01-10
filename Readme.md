@@ -1,14 +1,15 @@
 A benchmark for NuSMV extensions to BeepBeep 3
 ==============================================
 
+| :----------- | ----------------------------------: |
 | Author:      | Laboratoire d'informatique formelle |
-| Version:     | 1.0                                 |
-| Date:        | 2021-05-15                          |
+| Version:     | 2.0                                 |
+| Date:        | 2023-01-08                          |
 
 This lab studies a formalization of event stream processing pipelines as Kripke
 structures that can be handled by a model checker. More specifically, the
 [BeepBeep](https://liflab.github.io/beepbeep-3) event stream processing library
-has been modified in order to export chains of processors as input files for the
+has been extended in order to export chains of processors as input files for the
 nuXmv model checking tool. This makes it possible to formally verify properties
 on these pipelines, and opens the way to the use of such pipelines directly
 within a model checker as an extension of its specification language.
@@ -20,12 +21,26 @@ sample of generic properties, with a special focus on the impact of parameters
 Q (the size of the internal queues in each processor) and N (the size of the
 domain for numerical variables).
 
-The data produced by this lab is presented in part in the following research
-article:
+Versions
+--------
+
+The first version of this lab (release 1) produces data that was reported in the
+following research paper:
 
 - A. Bédard, S. Hallé. (2021). Model checking of stream processing pipelines.
   *21st International Symposium on Temporal Representation and Reasoning
   (TIME 2021)*, LIPIcs volume 206, 5:1-5:17. DOI: 10.4230/LIPIcs.TIME.2021.5
+
+The second version of this lab (release 2) produces data that was reported in
+the following research paper:
+
+- A. Bédard, S. Hallé. (2023). *Formal Verification for Event Stream
+  Processing: Model Checking of BeepBeep Stream Processing Pipelines*.
+  Submitted to *Information and Computation*.
+
+Although the experiments in the two papers are similar, they rely on codebases
+that are substantially different. Version 1 uses a modified version of BeepBeep,
+while version 2 uses the standard BeepBeep library with a separate extension.
 
 Instructions on using this repository
 -------------------------------------
@@ -47,12 +62,8 @@ Building the benchmark
 First make sure you have the following installed:
 
 - The Java Development Kit (JDK) to compile. The lab is developed to comply
-  with Java version 6; it is probably safe to use any later version.
+  with Java version 11; it is probably safe to use any later version.
 - [Ant](http://ant.apache.org) to automate the compilation and build process
-
-Download the sources for the lab from
-[GitHub](https://github.com/alexisBedard/nusmv-beepbeep-lab) or clone the
-repository using Git.
 
 ### Dependencies
 
@@ -64,10 +75,10 @@ system by typing:
 This will put the missing JAR files in the `Source/dep` folder in the project's
 root.
 
-One library that is not fetched is the [forked version of
+**Only for version 1:** one library that is not fetched is the [forked version of
 BeepBeep](https://github.com/alexisBedard/beepbeep-3), which you
 must download and compile. Then, copy `beepbeep-3.jar` in the `Source/dep`
-folder.
+folder. (This is not needed for version 2.)
 
 ### Compiling
 
@@ -106,7 +117,7 @@ You should see something like this:
     Hit Ctrl+C in this window to stop
 
 Open your web browser, and type `http://localhost:21212/index` in the address
-bar. This should lead you to the main page of LabMate's web control panel.
+bar. This should lead you to the main page of LabPal's web control panel.
 (Note that the machine running LabPal does not need to have a web browser.
 You can open a browser in another machine, and replace `localhost` by the IP
 address of the former.)

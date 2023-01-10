@@ -26,7 +26,7 @@
   <name>A benchmark of NuSMV extensions to BeepBeep 3</name>
   
   <!-- The project's version number -->
-  <version>1.0</version>
+  <version>2.0</version>
   
   <!-- The project's author. Currently this only
   shows up in the footer of the Javadoc documentation. -->
@@ -62,7 +62,29 @@
       <classname>ca.uqac.lif.labpal.Laboratory</classname>
       <bundle>true</bundle>
       <files>
-        <zip>https://github.com/liflab/labpal/releases/download/v2.11.9a/labpal-2.11.9a.zip</zip>
+        <jar>https://github.com/liflab/labpal/releases/download/v2.99-beta1/labpal.jar</jar>
+      </files>
+    </dependency>
+    <dependency>
+      <!--
+      BeepBeep 3
+      -->
+      <name>BeepBeep 3 Core</name>
+      <classname>ca.uqac.lif.cep.Processor</classname>
+      <bundle>true</bundle>
+      <files>
+        <zip>https://github.com/liflab/beepbeep-3/releases/download/v0.10.7-alpha/beepbeep-3-0.10.7-alpha.zip</zip>
+      </files>
+    </dependency>
+    <dependency>
+      <!--
+      BeepBeep 3 symbolic palette (includes nusmv4j)
+      -->
+      <name>Symbolic BeepBeep</name>
+      <classname>ca.uqac.lif.cep.nusmv.BeepBeepModel</classname>
+      <bundle>true</bundle>
+      <files>
+        <jar>https://github.com/liflab/symbolic-beepbeep/releases/download/v0.1/symbolic-beepbeep.jar</jar>
       </files>
     </dependency>
   </dependencies>
