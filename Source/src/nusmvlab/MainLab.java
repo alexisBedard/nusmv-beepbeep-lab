@@ -24,6 +24,7 @@ import ca.uqac.lif.spreadsheet.chart.Chart.Axis;
 import ca.uqac.lif.spreadsheet.chart.gnuplot.GnuplotHistogram;
 import ca.uqac.lif.spreadsheet.chart.gnuplot.GnuplotScatterplot;
 import ca.uqac.lif.spreadsheet.functions.ExpandAsColumns;
+import ca.uqac.lif.fs.FileUtils;
 import ca.uqac.lif.labpal.Laboratory;
 import ca.uqac.lif.labpal.plot.Plot;
 import ca.uqac.lif.labpal.region.Point;
@@ -63,6 +64,10 @@ import static nusmvlab.NuSMVModelLibrary.Q_SUM_OF_ODDS;
 import static nusmvlab.NuSMVModelLibrary.Q_WIN_SUM_OF_1;
 import static nusmvlab.PropertyProvider.PROPERTY;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -81,7 +86,9 @@ public class MainLab extends Laboratory
 		// Lab metadata
 		setName("A benchmark for NuSMV extensions to BeepBeep 3");
 		setAuthor("Alexis Bédard and Sylvain Hallé");
-		setDoi("10.5281/zenodo.5386462");
+		String description = new String(readAllBytes(MainLab.class.getResourceAsStream("description.html")));
+		setDescription(description);
+		//setDoi("10.5281/zenodo.5386462");
 
 		/* Set to true to include experiments performing equivalence and step-wise
 		   equivalence checking. */
@@ -211,7 +218,7 @@ public class MainLab extends Laboratory
 					extension(QUEUE_SIZE, 2),
 					extension(DOMAIN_SIZE, 4),
 					extension(K, 3));
-					//range(K, 2, 5));
+			//range(K, 2, 5));
 			// Time
 			ExperimentTable et_time = new ExperimentTable(QUERY, PROPERTY, TIME);
 			et_time.setShowInList(false);
@@ -511,5 +518,24 @@ public class MainLab extends Laboratory
 	{
 		// Nothing else to do here
 		MainLab.initialize(args, MainLab.class);
+	}
+
+	public static byte[] readAllBytes(InputStream inputStream)
+	{
+		final int bufLen = 1024;
+		byte[] buf = new byte[bufLen];
+		int readLen;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+			while ((readLen = inputStream.read(buf, 0, bufLen)) != -1)
+				outputStream.write(buf, 0, readLen);
+
+			return outputStream.toByteArray();
+		}
+		catch (IOException e)
+		{
+			return new byte[0];
+		}
 	}
 }

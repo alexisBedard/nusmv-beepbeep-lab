@@ -1,10 +1,9 @@
 A benchmark for NuSMV extensions to BeepBeep 3
 ==============================================
 
-| :----------- | ----------------------------------: |
-| Author:      | Laboratoire d'informatique formelle |
-| Version:     | 2.0                                 |
-| Date:        | 2023-01-08                          |
+- Author: Laboratoire d'informatique formelle
+- Veresion: 2.0
+- 2023-01-10
 
 This lab studies a formalization of event stream processing pipelines as Kripke
 structures that can be handled by a model checker. More specifically, the
@@ -31,7 +30,7 @@ following research paper:
   *21st International Symposium on Temporal Representation and Reasoning
   (TIME 2021)*, LIPIcs volume 206, 5:1-5:17. DOI: 10.4230/LIPIcs.TIME.2021.5
 
-The second version of this lab (release 2) produces data that was reported in
+The current version of this lab (release 2) produces data that was reported in
 the following research paper:
 
 - A. Bédard, S. Hallé. (2023). *Formal Verification for Event Stream
@@ -110,8 +109,8 @@ To start the lab and use its web interface, type at the command line:
 
 You should see something like this:
 
-    LabPal 2.8 - A versatile environment for running experiments
-    (C) 2014-2017 Laboratoire d'informatique formelle
+    LabPal 2.99 - A versatile environment for running experiments
+    (C) 2014-2022 Laboratoire d'informatique formelle
     Université du Québec à Chicoutimi, Canada
     Please visit http://localhost:21212/index to run this lab
     Hit Ctrl+C in this window to stop
